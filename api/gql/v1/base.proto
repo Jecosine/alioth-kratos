@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package api.gql.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/Jecosine/alioth-kratos/api/gql/v1;v1";
+option java_multiple_files = true;
+option java_package = "api.gql.v1";
+
+service Base {
+	rpc Ping (google.protobuf.Empty) returns (PingReply) {
+		option (google.api.http) = {
+			get: "/gql/ping"
+		};
+	}
+//	rpc Root (google.protobuf.Empty) returns (google.protobuf.Empty) {
+//		option (google.api.http) = {
+//			get: "/gql"
+//		};
+//	}
+//	rpc Query (QueryRequest) returns (QueryReply) {
+//		option (google.api.http) = {
+//			post: "gql/query",
+//			body: "*"
+//		};
+//	}
+//	rpc UpdateBase (UpdateBaseRequest) returns (UpdateBaseReply);
+//	rpc DeleteBase (DeleteBaseRequest) returns (DeleteBaseReply);
+//	rpc GetBase (GetBaseRequest) returns (GetBaseReply);
+//	rpc ListBase (ListBaseRequest) returns (ListBaseReply);
+}
+
+message PingRequest {}
+message PingReply {
+	string ping = 1;
+}
+
+message QueryRequest {
+	string operation_name = 1;
+	string query = 2;
+	repeated google.protobuf.Struct variables = 3;
+}
+message QueryReply {
+	google.protobuf.Struct data = 1;
+}
+
+message DeleteBaseRequest {}
+message DeleteBaseReply {}
+
+message GetBaseRequest {}
+message GetBaseReply {}
+
+message ListBaseRequest {}
+message ListBaseReply {}

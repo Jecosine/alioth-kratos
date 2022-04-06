@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package api.helloworld.v1;
+
+option go_package = "github.com/Jecosine/alioth-kratos/api/helloworld/v1;v1";
+option java_multiple_files = true;
+option java_package = "api.helloworld.v1";
+
+service TestService {
+	rpc CreateTestService (CreateTestServiceRequest) returns (CreateTestServiceReply);
+	rpc UpdateTestService (UpdateTestServiceRequest) returns (UpdateTestServiceReply);
+	rpc DeleteTestService (DeleteTestServiceRequest) returns (DeleteTestServiceReply);
+	rpc GetTestService (GetTestServiceRequest) returns (GetTestServiceReply);
+	rpc ListTestService (ListTestServiceRequest) returns (ListTestServiceReply);
+}
+
+message CreateTestServiceRequest {}
+message CreateTestServiceReply {}
+
+message UpdateTestServiceRequest {}
+message UpdateTestServiceReply {}
+
+message DeleteTestServiceRequest {}
+message DeleteTestServiceReply {}
+
+message GetTestServiceRequest {}
+message GetTestServiceReply {}
+
+message ListTestServiceRequest {}
+message ListTestServiceReply {}
