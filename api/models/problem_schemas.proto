@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package api.models;
+
+option go_package = "api/models";
+import "models/user_schemas.proto";
+
+message TagProto {
+    int64 id = 1;
+    string name = 2;
+}
+
+message ProblemProto {
+    int64 id = 1;
+    string title = 2;
+    string content = 3;
+    UserProto author = 4;
+    repeated TagProto tags = 5;
+}

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package api.models;
+
+import "models/user_schemas.proto";
+import "models/problem_schemas.proto";
+
+message JudgeRequestProto {
+    int64 id = 1;
+    UserProto user = 2;
+    int64 created_time = 3;
+    string source_code = 4;
+    ProblemProto problem = 5;
+}

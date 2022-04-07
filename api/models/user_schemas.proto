@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package api.models;
+
+option go_package = "api/models";
+
+message UserProto {
+    int64 id = 1;
+    string nickname = 2;
+    string password = 3;
+    string avatar = 4;
+    int64 created_time = 5;
+}
+
