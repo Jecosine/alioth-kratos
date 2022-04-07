@@ -1,9 +1,11 @@
 syntax = "proto3";
 
-package api.models;
+package api;
+import "proto/user_schemas.proto";
 
-option go_package = "api/models";
-import "models/user_schemas.proto";
+option go_package = "github.com/Jecosine/alioth-kratos/api/proto;proto";
+
+
 
 message TagProto {
     int64 id = 1;

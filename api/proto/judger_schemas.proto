@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package api;
+
+import "proto/user_schemas.proto";
+import "proto/problem_schemas.proto";
+
+option go_package = "github.com/Jecosine/alioth-kratos/api/proto;proto";
+
+
+message JudgeRequestProto {
+    int64 id = 1;
+    UserProto user = 2;
+    int64 created_time = 3;
+    string source_code = 4;
+    ProblemProto problem = 5;
+}
+
+message JudgeReplyProto {
+    int64 id = 1;
+    UserProto user = 2;
+    int64 finished_time = 3;
+    int64 time_cost = 4;
+    int64 memory_cost = 5;
+    int64 status = 6;
+}

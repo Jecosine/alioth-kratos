@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package api.models;
+package api;
 
-option go_package = "api/models";
+option go_package = "github.com/Jecosine/alioth-kratos/api/proto;proto";
+
 
 message UserProto {
     int64 id = 1;

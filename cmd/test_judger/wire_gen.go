@@ -10,7 +10,7 @@ import (
 	"github.com/Jecosine/alioth-kratos/internal/biz"
 	"github.com/Jecosine/alioth-kratos/internal/conf"
 	"github.com/Jecosine/alioth-kratos/internal/data"
-	"github.com/Jecosine/alioth-kratos/internal/server"
+	"github.com/Jecosine/alioth-kratos/internal/server/judger"
 	"github.com/Jecosine/alioth-kratos/internal/service"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
@@ -19,17 +19,16 @@ import (
 // Injectors from wire.go:
 
 // wireApp init kratos application.
-func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
-	baseService := service.NewBaseService()
+func wireApp(server *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
 	dataData, cleanup, err := data.NewData(confData, logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	greeterRepo := data.NewGreeterRepo(dataData, logger)
-	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
-	greeterService := service.NewGreeterService(greeterUsecase)
-	httpServer := server.NewHTTPServer(confServer, baseService, greeterService, logger)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
+	judgerRepo := data.NewJudgerRepo(dataData, logger)
+	judgerUsecase := biz.NewJudgerUsecase(judgerRepo, logger)
+	judgerService := service.NewJudgerService(judgerUsecase)
+	httpServer := judger.NewJudgerHTTPServer(server, judgerService, logger)
+	grpcServer := judger.NewJudgerGRPCServer(server, judgerService, logger)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {
 		cleanup()

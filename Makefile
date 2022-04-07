@@ -50,6 +50,18 @@ all:
 	make config;
 	make generate;
 
+# make wire for cmd
+wire_judger:
+	cd cmd/test_judger && wire
+
+.PHONY: wire_judger
+
+# make wire for main cmd
+wire:
+	cd cmd/alioth_kratos && wire
+
+.PHONY: wire
+
 # show help
 help:
 	@echo ''

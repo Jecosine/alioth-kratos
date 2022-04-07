@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/Jecosine/alioth-kratos/api/proto;proto";

@@ -1,18 +1,11 @@
 package biz
 
 import (
-	v1 "github.com/Jecosine/alioth-kratos/api/helloworld/v1"
-	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
 import (
 	"context"
-)
-
-var (
-	// ErrUserNotFound is user not found.
-	ErrUserNotFound = errors.NotFound(v1.ErrorReason_USER_NOT_FOUND.String(), "user not found")
 )
 
 // Judger is a Judger model.
