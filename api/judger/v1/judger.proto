@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package api.judger.v1;
+
+import "proto/judger_schemas.proto";
+import "google/api/annotations.proto";
+option go_package = "github.com/Jecosine/alioth-kratos/api/judger/v1;v1";
+
+service Judger {
+    rpc Ping (PingJudgerRequest) returns (PingJudgerReply) {
+        option (google.api.http) = {
+            get: "/judger/ping"
+        };
+    }
+    rpc Submit (SubmitJudgerRequest) returns (SubmitJudgerReply) {
+        option (google.api.http) = {
+            post: "/judger/submit";
+            body: "*";
+        };
+    }
+    //	rpc CreateJudger (CreateJudgerRequest) returns (CreateJudgerReply);
+    //	rpc UpdateJudger (UpdateJudgerRequest) returns (UpdateJudgerReply);
+    //	rpc DeleteJudger (DeleteJudgerRequest) returns (DeleteJudgerReply);
+    //	rpc GetJudger (GetJudgerRequest) returns (GetJudgerReply);
+    //	rpc ListJudger (ListJudgerRequest) returns (ListJudgerReply);
+}
+
+message PingJudgerRequest {}
+message PingJudgerReply {
+    int64 id = 1;
+    JudgerStatus data = 2;
+}
+// JudgerStatus is a struct representing running status of current judger
+message JudgerStatus {
+    int64 status = 1;
+    int64 current_tasks_amount = 2;
+    double estimate_time = 3;
+}
+message SubmitJudgerRequest {
+    JudgeRequestProto payload = 1;
+}
+message SubmitJudgerReply {
+    int64 code = 1;
+    string received = 2;
+}
+
+message DeleteJudgerRequest {}
+message DeleteJudgerReply {}
+
+message GetJudgerRequest {}
+message GetJudgerReply {}
+
+message ListJudgerRequest {}
+message ListJudgerReply {}
