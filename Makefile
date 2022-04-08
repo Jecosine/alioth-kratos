@@ -50,18 +50,12 @@ all:
 	make config;
 	make generate;
 
-# make wire for cmd
-wire_judger:
-	cd cmd/test_judger && wire
-
-.PHONY: wire_judger
-
-# make wire for main cmd
-wire:
-	cd cmd/alioth_kratos && wire
-
 .PHONY: wire
+# make wire for cmd
+wire:
+	find app -type d -depth 1 -print | xargs -L 1 bash -c 'cd "$$0" && pwd && $(MAKE) wire'
 
+.PHONY: help
 # show help
 help:
 	@echo ''
