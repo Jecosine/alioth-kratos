@@ -2,6 +2,9 @@ package data
 
 import (
 	"context"
+	"fmt"
+	v1 "github.com/Jecosine/alioth-kratos/api/judger/v1"
+	"github.com/Jecosine/alioth-kratos/api/proto"
 	"github.com/Jecosine/alioth-kratos/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -37,4 +40,17 @@ func (r *judgerRepo) ListByHello(context.Context, string) ([]*biz.Judger, error)
 
 func (r *judgerRepo) ListAll(context.Context) ([]*biz.Judger, error) {
 	return nil, nil
+}
+
+func (r *judgerRepo) GetPingStatus(ctx context.Context) *v1.PingJudgerReply {
+	// TODO: Fetch server status
+	return nil
+}
+
+func (r *judgerRepo) ProcessRequest(ctx context.Context, judgeRequest *proto.JudgeRequestProto) (*v1.SubmitJudgerReply, error) {
+	// TODO: get language and process
+	return &v1.SubmitJudgerReply{
+		Code:     0,
+		Received: fmt.Sprintf("Receive judge request: %d", judgeRequest.Id),
+	}, nil
 }

@@ -1,6 +1,8 @@
 package biz
 
 import (
+	v1 "github.com/Jecosine/alioth-kratos/api/judger/v1"
+	proto "github.com/Jecosine/alioth-kratos/api/proto"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -19,7 +21,7 @@ type JudgerRepo interface {
 	Update(context.Context, *Judger) (*Judger, error)
 	FindByID(context.Context, int64) (*Judger, error)
 	ListByHello(context.Context, string) ([]*Judger, error)
-	ListAll(context.Context) ([]*Judger, error)
+	ProcessRequest(context.Context, *proto.JudgeRequestProto) (*v1.SubmitJudgerReply, error)
 }
 
 // JudgerUsecase is a Judger usecase.
@@ -34,7 +36,16 @@ func NewJudgerUsecase(repo JudgerRepo, logger log.Logger) *JudgerUsecase {
 }
 
 // CreateJudger creates a Judger, and returns the new Judger.
-func (uc *JudgerUsecase) CreateJudger(ctx context.Context, g *Judger) (*Judger, error) {
-	uc.log.WithContext(ctx).Infof("CreateJudger: %v", g.Hello)
-	return uc.repo.Save(ctx, g)
+func (uc *JudgerUsecase) CreateJudger(ctx context.Context, j *Judger) (*Judger, error) {
+	uc.log.WithContext(ctx).Infof("CreateJudger: %v", j.Hello)
+	return uc.repo.Save(ctx, j)
+}
+
+func (uc *JudgerUsecase) ProcessRequest(ctx context.Context, judgeRequest *proto.JudgeRequestProto) (*v1.SubmitJudgerReply, error) {
+	uc.log.Infof("Received judge request: %v", judgeRequest)
+	judgeReply, err := uc.repo.ProcessRequest(ctx, judgeRequest)
+	if err != nil {
+		return nil, err
+	}
+	return judgeReply, err
 }

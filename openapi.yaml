@@ -107,26 +107,6 @@ components:
                 message:
                     type: string
             description: The response message containing the greetings
-        JudgeReplyProto:
-            type: object
-            properties:
-                id:
-                    type: integer
-                    format: int64
-                user:
-                    $ref: '#/components/schemas/UserProto'
-                finishedTime:
-                    type: integer
-                    format: int64
-                timeCost:
-                    type: integer
-                    format: int64
-                memoryCost:
-                    type: integer
-                    format: int64
-                status:
-                    type: integer
-                    format: int64
         JudgeRequestProto:
             type: object
             properties:
@@ -206,8 +186,8 @@ components:
                 code:
                     type: integer
                     format: int64
-                data:
-                    $ref: '#/components/schemas/JudgeReplyProto'
+                received:
+                    type: string
         SubmitJudgerRequest:
             type: object
             properties:
