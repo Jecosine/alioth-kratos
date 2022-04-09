@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package api.auth.v1;
+
+import "google/api/annotations.proto";
+import "proto/user_schemas.proto";
+
+option go_package = "github.com/Jecosine/alioth-kratos/api/auth/v1;v1";
+
+service Auth {
+	rpc Register (RegisterRequest) returns (RegisterReply) {
+		option (google.api.http) = {
+			post: "auth/register",
+			body: "*"
+		};
+	}
+	rpc Login (LoginRequest) returns (LoginReply) {
+		option (google.api.http) = {
+			post: "auth/login",
+			body: "*"
+		};
+	}
+	rpc DeleteAuth (DeleteAuthRequest) returns (DeleteAuthReply);
+	rpc GetAuth (GetAuthRequest) returns (GetAuthReply);
+	rpc ListAuth (ListAuthRequest) returns (ListAuthReply);
+}
+
+message RegisterRequest {
+	UserProto payload = 1;
+}
+message RegisterReply {}
+
+message LoginRequest {}
+message LoginReply {}
+
+message DeleteAuthRequest {}
+message DeleteAuthReply {}
+
+message GetAuthRequest {}
+message GetAuthReply {}
+
+message ListAuthRequest {}
+message ListAuthReply {}
