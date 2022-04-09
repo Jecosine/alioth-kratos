@@ -30,6 +30,13 @@ message Data {
     string driver = 1;
     string source = 2;
   }
+  message Mongo {
+    string database = 1;
+    string host = 2;
+    int64 port = 3;
+    string username = 4;
+    string password = 5;
+  }
   message Redis {
     string network = 1;
     string addr = 2;
@@ -37,5 +44,10 @@ message Data {
     google.protobuf.Duration write_timeout = 4;
   }
   Database database = 1;
-  Redis redis = 2;
+  Mongo mongodb = 2;
+  Redis redis = 3;
+}
+
+message Jwt {
+  string secret = 1;
 }
