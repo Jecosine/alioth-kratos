@@ -21,7 +21,8 @@ import (
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, confData *conf.Data, logger log.Logger) (*kratos.App, func(), error) {
 	baseService := service.NewBaseService()
-	dataData, cleanup, err := data.NewData(confData, logger)
+	database := data.NewMongoDB(confData, logger)
+	dataData, cleanup, err := data.NewData(database, logger)
 	if err != nil {
 		return nil, nil, err
 	}
