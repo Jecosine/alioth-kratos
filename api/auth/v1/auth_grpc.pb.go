@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -24,8 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type AuthClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterReply, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginReply, error)
-	DeleteAuth(ctx context.Context, in *DeleteAuthRequest, opts ...grpc.CallOption) (*DeleteAuthReply, error)
-	GetAuth(ctx context.Context, in *GetAuthRequest, opts ...grpc.CallOption) (*GetAuthReply, error)
+	CurrentUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CurrentUserReply, error)
 	ListAuth(ctx context.Context, in *ListAuthRequest, opts ...grpc.CallOption) (*ListAuthReply, error)
 }
 
@@ -55,18 +55,9 @@ func (c *authClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *authClient) DeleteAuth(ctx context.Context, in *DeleteAuthRequest, opts ...grpc.CallOption) (*DeleteAuthReply, error) {
-	out := new(DeleteAuthReply)
-	err := c.cc.Invoke(ctx, "/api.auth.v1.Auth/DeleteAuth", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authClient) GetAuth(ctx context.Context, in *GetAuthRequest, opts ...grpc.CallOption) (*GetAuthReply, error) {
-	out := new(GetAuthReply)
-	err := c.cc.Invoke(ctx, "/api.auth.v1.Auth/GetAuth", in, out, opts...)
+func (c *authClient) CurrentUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CurrentUserReply, error) {
+	out := new(CurrentUserReply)
+	err := c.cc.Invoke(ctx, "/api.auth.v1.Auth/CurrentUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +79,7 @@ func (c *authClient) ListAuth(ctx context.Context, in *ListAuthRequest, opts ...
 type AuthServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterReply, error)
 	Login(context.Context, *LoginRequest) (*LoginReply, error)
-	DeleteAuth(context.Context, *DeleteAuthRequest) (*DeleteAuthReply, error)
-	GetAuth(context.Context, *GetAuthRequest) (*GetAuthReply, error)
+	CurrentUser(context.Context, *emptypb.Empty) (*CurrentUserReply, error)
 	ListAuth(context.Context, *ListAuthRequest) (*ListAuthReply, error)
 	mustEmbedUnimplementedAuthServer()
 }
@@ -104,11 +94,8 @@ func (UnimplementedAuthServer) Register(context.Context, *RegisterRequest) (*Reg
 func (UnimplementedAuthServer) Login(context.Context, *LoginRequest) (*LoginReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServer) DeleteAuth(context.Context, *DeleteAuthRequest) (*DeleteAuthReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteAuth not implemented")
-}
-func (UnimplementedAuthServer) GetAuth(context.Context, *GetAuthRequest) (*GetAuthReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAuth not implemented")
+func (UnimplementedAuthServer) CurrentUser(context.Context, *emptypb.Empty) (*CurrentUserReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CurrentUser not implemented")
 }
 func (UnimplementedAuthServer) ListAuth(context.Context, *ListAuthRequest) (*ListAuthReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAuth not implemented")
@@ -162,38 +149,20 @@ func _Auth_Login_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Auth_DeleteAuth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteAuthRequest)
+func _Auth_CurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServer).DeleteAuth(ctx, in)
+		return srv.(AuthServer).CurrentUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.auth.v1.Auth/DeleteAuth",
+		FullMethod: "/api.auth.v1.Auth/CurrentUser",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).DeleteAuth(ctx, req.(*DeleteAuthRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Auth_GetAuth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAuthRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServer).GetAuth(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.auth.v1.Auth/GetAuth",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServer).GetAuth(ctx, req.(*GetAuthRequest))
+		return srv.(AuthServer).CurrentUser(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -232,12 +201,8 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Auth_Login_Handler,
 		},
 		{
-			MethodName: "DeleteAuth",
-			Handler:    _Auth_DeleteAuth_Handler,
-		},
-		{
-			MethodName: "GetAuth",
-			Handler:    _Auth_GetAuth_Handler,
+			MethodName: "CurrentUser",
+			Handler:    _Auth_CurrentUser_Handler,
 		},
 		{
 			MethodName: "ListAuth",

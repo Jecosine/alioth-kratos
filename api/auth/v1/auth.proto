@@ -3,6 +3,7 @@ syntax = "proto3";
 package api.auth.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 import "proto/user_schemas.proto";
 
 option go_package = "github.com/Jecosine/alioth-kratos/api/auth/v1;v1";
@@ -20,8 +21,11 @@ service Auth {
 			body: "*"
 		};
 	}
-	rpc DeleteAuth (DeleteAuthRequest) returns (DeleteAuthReply);
-	rpc GetAuth (GetAuthRequest) returns (GetAuthReply);
+	rpc CurrentUser (google.protobuf.Empty) returns (CurrentUserReply) {
+		option (google.api.http) = {
+			get: "auth/current"
+		};
+	}
 	rpc ListAuth (ListAuthRequest) returns (ListAuthReply);
 }
 
@@ -36,8 +40,11 @@ message LoginReply {}
 message DeleteAuthRequest {}
 message DeleteAuthReply {}
 
-message GetAuthRequest {}
-message GetAuthReply {}
+message CurrentUserRequest {}
+message CurrentUserReply {
+	UserProto user = 1;
+	int64 expired = 2;
+}
 
 message ListAuthRequest {}
 message ListAuthReply {}
