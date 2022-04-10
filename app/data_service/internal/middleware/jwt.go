@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Jecosine/alioth-kratos/api/proto"
+	"github.com/Jecosine/alioth-kratos/pkg/utils"
 	"github.com/go-kratos/kratos/v2/errors"
 	m "github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
@@ -12,22 +13,15 @@ import (
 	"time"
 )
 
-var (
-	claimsKey struct{}
-	//expiredKey struct{}
-)
-
-type AuthClaim struct {
-	jwtv4.RegisteredClaims
-	User    *proto.UserProto
-	Expired int64
-}
-
 // GenerateToken by received user claims
 func GenerateToken(secret string, user *proto.UserProto) string {
-	token := jwtv4.NewWithClaims(jwtv4.SigningMethodHS256, AuthClaim{
+	now := time.Now()
+	token := jwtv4.NewWithClaims(jwtv4.SigningMethodHS256, utils.AuthClaim{
+		RegisteredClaims: jwtv4.RegisteredClaims{
+			ExpiresAt: &jwtv4.NumericDate{Time: now},
+		},
 		User:    user,
-		Expired: time.Now().Unix(),
+		Expired: now.Unix(),
 	})
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
@@ -47,19 +41,19 @@ func NewJwtAuth(secret string) m.Middleware {
 				if err != nil {
 					return nil, err
 				}
-				ctx = context.WithValue(ctx, claimsKey, claims)
+				ctx = utils.AddClaimsToContext(ctx, claims)
 			}
 			return handler(ctx, req)
 		}
 	}
 }
 
-func GetClaimsFromAuthString(authString, secret string) (*AuthClaim, error) {
+func GetClaimsFromAuthString(authString, secret string) (*utils.AuthClaim, error) {
 	splits := strings.SplitN(authString, " ", 2)
 	if len(splits) != 2 || !strings.EqualFold(splits[0], "Token") {
 		return nil, errors.Unauthorized("Unauthorized", "Invalid Authentication Token")
 	}
-	token, err := jwtv4.ParseWithClaims(splits[1], &AuthClaim{}, func(token *jwtv4.Token) (interface{}, error) {
+	token, err := jwtv4.ParseWithClaims(splits[1], &utils.AuthClaim{}, func(token *jwtv4.Token) (interface{}, error) {
 		// validate algorithm
 		if _, ok := token.Method.(*jwtv4.SigningMethodHMAC); !ok {
 			// DEBUG: log if alg not paired
@@ -71,7 +65,7 @@ func GetClaimsFromAuthString(authString, secret string) (*AuthClaim, error) {
 	if err != nil {
 		return nil, err
 	}
-	if claims, ok := token.Claims.(*AuthClaim); ok && token.Valid {
+	if claims, ok := token.Claims.(*utils.AuthClaim); ok && token.Valid {
 		if time.Now().Unix() > claims.Expired {
 			// expired
 			return nil, errors.Unauthorized("Unauthorized", "Token Expired")
