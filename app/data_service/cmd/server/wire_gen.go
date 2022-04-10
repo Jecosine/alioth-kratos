@@ -20,6 +20,7 @@ import (
 
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, confData *conf.Data, jwt *conf.Jwt, logger log.Logger) (*kratos.App, func(), error) {
+	authService := service.NewAuthService()
 	baseService := service.NewBaseService()
 	database := data.NewMongoDB(confData, logger)
 	dataData, cleanup, err := data.NewData(database, logger)
@@ -29,7 +30,7 @@ func wireApp(confServer *conf.Server, confData *conf.Data, jwt *conf.Jwt, logger
 	greeterRepo := data.NewGreeterRepo(dataData, logger)
 	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
 	greeterService := service.NewGreeterService(greeterUsecase)
-	httpServer := server.NewHTTPServer(confServer, jwt, baseService, greeterService, logger)
+	httpServer := server.NewHTTPServer(confServer, jwt, authService, baseService, greeterService, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {

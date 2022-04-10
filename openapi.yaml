@@ -91,6 +91,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    auth/current:
+        get:
+            tags:
+                - Auth
+            operationId: Auth_CurrentUser
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CurrentUserReply'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     auth/login:
         post:
             tags:
@@ -141,6 +159,14 @@ paths:
                                 $ref: '#/components/schemas/Status'
 components:
     schemas:
+        CurrentUserReply:
+            type: object
+            properties:
+                user:
+                    $ref: '#/components/schemas/UserProto'
+                expired:
+                    type: integer
+                    format: int64
         GoogleProtobufAny:
             type: object
             properties:

@@ -35,7 +35,7 @@ func NewJwtAuth(secret string) m.Middleware {
 	return func(handler m.Handler) m.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			if tr, ok := transport.FromServerContext(ctx); ok {
-				authString := tr.RequestHeader().Get("Authentication")
+				authString := tr.RequestHeader().Get("Authorization")
 				// token start with `Token`
 				claims, err := GetClaimsFromAuthString(authString, secret)
 				if err != nil {
@@ -63,21 +63,19 @@ func GetClaimsFromAuthString(authString, secret string) (*utils.AuthClaim, error
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return nil, err
+		vErr, ok := err.(*jwtv4.ValidationError)
+		if ok {
+			// check if is expired
+			if vErr.Errors == jwtv4.ValidationErrorExpired {
+				return nil, errors.Unauthorized("Unauthorized", "Token Expired")
+			}
+		}
+		return nil, errors.Unauthorized("Unauthorized", "Unknown Error")
 	}
 	if claims, ok := token.Claims.(*utils.AuthClaim); ok && token.Valid {
-		if time.Now().Unix() > claims.Expired {
-			// expired
-			return nil, errors.Unauthorized("Unauthorized", "Token Expired")
-		}
-		// TODO: user authentication
-		if true {
-			return claims, nil
-		} else {
-			return nil, errors.Unauthorized("Unauthorized", "Invalid Authentication Claims")
-		}
+		return claims, nil
 	} else {
-		return nil, errors.Unauthorized("Unauthorized", "Invalid Authentication Token")
+		return nil, errors.Unauthorized("Unauthorized", "Invalid Authentication Claims")
 	}
 
 }

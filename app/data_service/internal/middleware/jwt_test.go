@@ -58,7 +58,11 @@ func TestGenerateToken(t *testing.T) {
 		tokenString := GenerateTokenWithTime(past, "alioth")
 		token, err := SimpleGetClaims("alioth", tokenString)
 		if assert.Error(t, err) {
-			t.Log("expired token successfully detected")
+			if assert.Equal(t, err.(*jwtv4.ValidationError).Errors, jwtv4.ValidationErrorExpired) {
+				t.Log("expired token successfully detected")
+			} else {
+				t.Fatalf("unexpect error occurs: %v", err)
+			}
 		} else {
 			t.Logf("token: %v", token)
 			t.Fatal("expired token passes validation?")
@@ -67,6 +71,7 @@ func TestGenerateToken(t *testing.T) {
 	})
 	t.Run("Valid token", func(t *testing.T) {
 		tokenString := GenerateTokenWithTime(future, "alioth")
+		t.Log(tokenString)
 		_, err := SimpleGetClaims("alioth", tokenString)
 		if assert.NoError(t, err) {
 			t.Log("valid token pass")

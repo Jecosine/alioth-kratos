@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	authApi "github.com/Jecosine/alioth-kratos/api/auth/v1"
 	gql "github.com/Jecosine/alioth-kratos/api/gql/v1"
 	v1 "github.com/Jecosine/alioth-kratos/api/helloworld/v1"
 	"github.com/Jecosine/alioth-kratos/app/data_service/graph"
@@ -39,7 +40,7 @@ func WhitelistAuthRouters() selector.MatchFunc {
 }
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, cj *conf.Jwt, base *service.BaseService, greeter *service.GreeterService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, cj *conf.Jwt, auth *service.AuthService, base *service.BaseService, greeter *service.GreeterService, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -63,6 +64,6 @@ func NewHTTPServer(c *conf.Server, cj *conf.Jwt, base *service.BaseService, gree
 	srv := http.NewServer(opts...)
 	v1.RegisterGreeterHTTPServer(srv, greeter)
 	gql.RegisterBaseHTTPServer(srv, base)
-	RegisterGraphQLServer(srv)
+	authApi.RegisterAuthHTTPServer(srv, auth)
 	return srv
 }
