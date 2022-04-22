@@ -1,0 +1,16 @@
+type JudgeRequest {
+    id: ID!,
+    user: User!,
+    createdTime: Int!,
+    source_code: String!,
+    problem: Problem!
+}
+
+type JudgeReply {
+    id: ID!,
+    user: User!,
+    finishedTime: Int!,
+    timeCost: Int!,
+    memoryCost: Int!,
+    status: Int!
+}

@@ -1,0 +1,16 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Query {
+    todos: [Todo!]!
+}
+
+type Mutation {
+    createTodo(input: NewTodo!): Todo!
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+}

@@ -1,0 +1,10 @@
+# https://github.com/99designs/gqlgen/blob/master/docs/content/reference/scalars.md
+
+# resolves to time.Time
+scalar Time
+
+# resolves to map[string]interface{}
+scalar Map
+
+# resolves to interface{}
+scalar Any
