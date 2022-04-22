@@ -1,7 +1,7 @@
 type JudgeRequest {
     id: ID!,
     user: User!,
-    createdTime: Int!,
+    createdTime: Time!,
     source_code: String!,
     problem: Problem!
 }
@@ -9,7 +9,8 @@ type JudgeRequest {
 type JudgeReply {
     id: ID!,
     user: User!,
-    finishedTime: Int!,
+    judgeTime: Time!,
+    finishedTime: Time!,
     timeCost: Int!,
     memoryCost: Int!,
     status: Int!

@@ -4,6 +4,7 @@ type Problem {
     content: String!,
     author: User!,
     tags: [Tag],
+    createdTime: Time!
 }
 type Tag {
     id: ID!,
