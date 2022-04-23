@@ -1,8 +1,0 @@
-type User {
-    id: ID!
-    nickname: String!
-    email: String!
-    password: String!
-    avatar: String!
-    createdTime: Int!
-}

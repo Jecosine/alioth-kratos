@@ -1,0 +1,45 @@
+type User {
+    id: ID!
+    nickname: String!
+    email: String!
+    password: String!
+    avatar: String!
+    createdTime: Int!
+    teams: [Team]!
+    managed: [Team]!
+}
+input UserInput {
+    email: String!
+    password: String!
+}
+enum RoleScope {
+    GLOBAL
+    TEAM
+}
+type Role {
+    id: ID!
+    name: String!
+    scope: RoleScope
+    privileges: [Privilege]!
+}
+
+type Privilege {
+    id: ID!
+    name: String!
+}
+
+input PingInput {
+    msg: String!
+}
+# Mutation
+extend type Mutation {
+    createUser(user: UserInput!) : User
+    ping(payload: PingInput!) : String
+    pingAuth(payload: PingInput!) : String @hasRole(role: ADMIN)
+}
+
+# Query
+extend type Query {
+    currentUser(id: ID!) : User
+
+}
