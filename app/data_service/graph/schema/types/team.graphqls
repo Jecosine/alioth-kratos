@@ -4,3 +4,19 @@ type Team {
     members: [User!]!,
     createdTime: Time!,
 }
+
+enum TaskStatus {
+    Expired,
+    Finished,
+    Waiting,
+    Canceled,
+}
+
+type TaskList {
+    id: ID!,
+    name: String!,
+    assignees: [User]!,
+    deadline: Time!,
+    status: TaskStatus!,
+    relyTaskList: TaskList,
+}
