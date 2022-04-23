@@ -11,6 +11,22 @@ enum TaskStatus {
     Waiting,
     Canceled,
 }
+enum TaskType {
+    Problem,
+    Custom,
+    Meeting,
+    Submission,
+}
+
+type Task {
+    id: ID!,
+    name: String!,
+    taskType: TaskType,
+    content: String,
+    assignees: [User]!,
+    status: TaskStatus!,
+    parentList: TaskList,
+}
 
 type TaskList {
     id: ID!,
@@ -19,4 +35,5 @@ type TaskList {
     deadline: Time!,
     status: TaskStatus!,
     relyTaskList: TaskList,
+    tasks: [Task!]!,
 }
