@@ -12,7 +12,7 @@ import (
 
 // ProviderSet is data providers.
 var (
-	ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewMongoDB)
+	ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewMongoDB, NewAuthRepo)
 )
 
 // Data .

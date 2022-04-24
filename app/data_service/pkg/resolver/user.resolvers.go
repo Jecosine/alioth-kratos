@@ -16,11 +16,10 @@ func (r *mutationResolver) CreateUser(ctx context.Context, user model.UserInput)
 
 func (r *mutationResolver) Ping(ctx context.Context, payload model.PingInput) (*string, error) {
 	return &payload.Msg, nil
-	//panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) PingAuth(ctx context.Context, payload model.PingInput) (*string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return &payload.Msg, nil
 }
 
 func (r *queryResolver) CurrentUser(ctx context.Context, id string) (*model.User, error) {

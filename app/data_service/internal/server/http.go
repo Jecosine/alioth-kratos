@@ -18,9 +18,9 @@ import (
 	gHandler "github.com/gorilla/handlers"
 )
 
-func RegisterGraphQLServer(s *http.Server) {
+func RegisterGraphQLServer(s *http.Server, resolverConf resolver.Config) {
 
-	srv := handler.NewDefaultServer(resolver.NewExecutableSchema(resolver.Config{Resolvers: &resolver.Resolver{}, Directives: resolver.DirectiveRoot{}}))
+	srv := handler.NewDefaultServer(resolver.NewExecutableSchema(resolverConf))
 	s.Handle("/gql/query", srv)
 	s.Handle("/gql", playground.Handler("Alioth GraphQL", "/gql/query"))
 	//r.Get("/gql/ping", )
@@ -66,6 +66,11 @@ func NewHTTPServer(c *conf.Server, cj *conf.Jwt, auth *service.AuthService, base
 	v1.RegisterGreeterHTTPServer(srv, greeter)
 	gql.RegisterBaseHTTPServer(srv, base)
 	authApi.RegisterAuthHTTPServer(srv, auth)
-	RegisterGraphQLServer(srv)
+	// setup directives
+
+	RegisterGraphQLServer(srv, resolver.Config{Resolvers: &resolver.Resolver{}, Directives: resolver.DirectiveRoot{
+		HasRole:          auth.HasRole(),
+		TaskListFinished: nil,
+	}})
 	return srv
 }
