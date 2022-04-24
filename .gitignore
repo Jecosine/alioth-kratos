@@ -35,5 +35,5 @@ bin/
 .idea/
 *.swp
 api/proto/pkg
-**/config/local.yml
+**/config/local.yaml
 *.tmpl
