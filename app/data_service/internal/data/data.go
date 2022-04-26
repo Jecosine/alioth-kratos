@@ -1,10 +1,15 @@
 package data
 
 import (
+	"database/sql"
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"fmt"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent"
 	"github.com/Jecosine/alioth-kratos/app/data_service/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
@@ -12,14 +17,15 @@ import (
 
 // ProviderSet is data providers.
 var (
-	ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewMongoDB, NewAuthRepo)
+	ProviderSet = wire.NewSet(NewData, NewGreeterRepo, NewMongoDB, NewPostgres, NewAuthRepo)
 )
 
 // Data .
 type Data struct {
 	// TODO wrapped database client
-	db  *mongo.Database
-	log *log.Helper
+	db       *mongo.Database
+	postgres *ent.Client
+	log      *log.Helper
 }
 
 // NewMongoDB new a mongodb client
@@ -40,8 +46,26 @@ func NewMongoDB(c *conf.Data, logger log.Logger) *mongo.Database {
 	return client.Database(c.Mongodb.Database)
 }
 
+// NewPostgres new a postgresql client
+func NewPostgres(c *conf.Data, logger log.Logger) *ent.Client {
+	logHelper := log.NewHelper(log.With(logger, "module", "data_service"))
+	uri := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s", c.Postgres.Host, c.Postgres.Port, c.Postgres.Username, c.Postgres.Password, c.Postgres.Database)
+	db, err := sql.Open("pgx", uri)
+	if err != nil {
+		panic(err)
+	}
+	drv := entsql.OpenDB(dialect.Postgres, db)
+	client := ent.NewClient(ent.Driver(drv))
+	err = client.Schema.Create(context.Background())
+	if err != nil {
+		logHelper.Warn("cannot connect to postgresql db")
+		panic(err)
+	}
+	return client
+}
+
 // NewData .
-func NewData(mongodb *mongo.Database, logger log.Logger) (*Data, func(), error) {
+func NewData(mongodb *mongo.Database, postges *ent.Client, logger log.Logger) (*Data, func(), error) {
 	logHelper := log.NewHelper(log.With(logger, "module", "data_service"))
 
 	cleanup := func() {
@@ -50,7 +74,8 @@ func NewData(mongodb *mongo.Database, logger log.Logger) (*Data, func(), error) 
 
 	// init mongodb
 	return &Data{
-		db:  mongodb,
-		log: logHelper,
+		db:       mongodb,
+		postgres: postges,
+		log:      logHelper,
 	}, cleanup, nil
 }

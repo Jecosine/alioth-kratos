@@ -40,6 +40,8 @@ func (s *AuthService) CurrentUser(ctx context.Context, req *emptypb.Empty) (*pb.
 		Expired: claims.Expired,
 	}, nil
 }
+
+// HasRole check role of user (gql directive)
 func (s *AuthService) HasRole() func(ctx context.Context, obj interface{}, next graphql.Resolver, role model.RoleType, id *string) (res interface{}, err error) {
 	return func(ctx context.Context, obj interface{}, next graphql.Resolver, role model.RoleType, id *string) (res interface{}, err error) {
 		fmt.Print("called")
