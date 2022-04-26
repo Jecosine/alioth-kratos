@@ -1,0 +1,7 @@
+type Announcement {
+    id: ID!,
+    title: String!,
+    author: User!,
+    content: String!
+    createdTime: Time!,
+}
