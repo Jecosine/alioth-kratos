@@ -9,8 +9,8 @@ import (
 	v1 "github.com/Jecosine/alioth-kratos/api/helloworld/v1"
 	"github.com/Jecosine/alioth-kratos/app/data_service/internal/conf"
 	"github.com/Jecosine/alioth-kratos/app/data_service/internal/middleware"
+	"github.com/Jecosine/alioth-kratos/app/data_service/internal/resolver"
 	"github.com/Jecosine/alioth-kratos/app/data_service/internal/service"
-	"github.com/Jecosine/alioth-kratos/app/data_service/pkg/resolver"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
@@ -41,7 +41,7 @@ func WhitelistAuthRouters() selector.MatchFunc {
 }
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, cj *conf.Jwt, auth *service.AuthService, base *service.BaseService, greeter *service.GreeterService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, cj *conf.Jwt, auth *service.AuthService, base *service.BaseService, greeter *service.GreeterService, r *resolver.Resolver, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -68,9 +68,12 @@ func NewHTTPServer(c *conf.Server, cj *conf.Jwt, auth *service.AuthService, base
 	authApi.RegisterAuthHTTPServer(srv, auth)
 	// setup directives
 
-	RegisterGraphQLServer(srv, resolver.Config{Resolvers: &resolver.Resolver{}, Directives: resolver.DirectiveRoot{
-		HasRole:          auth.HasRole(),
-		TaskListFinished: nil,
-	}})
+	RegisterGraphQLServer(srv, resolver.Config{
+		Resolvers: r,
+		Directives: resolver.DirectiveRoot{
+			HasRole:          auth.HasRole(),
+			TaskListFinished: nil,
+		},
+	})
 	return srv
 }

@@ -4,7 +4,7 @@ type User {
     email: String!
     password: String!
     avatar: String!
-    createdTime: Int!
+    createdTime: Time!
     teams: [Team]!
     managed: [Team]!,
     announcements: [Announcement]!,
@@ -45,5 +45,5 @@ extend type Mutation {
 # Query
 extend type Query {
     currentUser(id: ID!) : User
-
+    users: [User]!
 }
