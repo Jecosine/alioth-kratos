@@ -55,6 +55,9 @@ all:
 wire:
 	find app -type d -depth 1 -print | xargs -L 1 bash -c 'cd "$$0" && pwd && $(MAKE) wire'
 
+gql:
+	go run github.com/99designs/gqlgen generate
+
 .PHONY: help
 # show help
 help:
