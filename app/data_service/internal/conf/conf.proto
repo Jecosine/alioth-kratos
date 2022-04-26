@@ -39,6 +39,13 @@ message Data {
         string username = 4;
         string password = 5;
     }
+    message Postgres {
+        string database = 1;
+        string host = 2;
+        int64 port = 3;
+        string username = 4;
+        string password = 5;
+    }
     message Redis {
         string network = 1;
         string addr = 2;
@@ -47,7 +54,8 @@ message Data {
     }
     Database database = 1;
     Mongo mongodb = 2;
-    Redis redis = 3;
+    Postgres postgres = 3;
+    Redis redis = 4;
 }
 
 message Jwt {
