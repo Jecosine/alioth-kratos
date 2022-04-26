@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/Jecosine/alioth-kratos/app/data_service/internal/biz"
-	"github.com/Jecosine/alioth-kratos/app/data_service/pkg/model"
+	"github.com/Jecosine/alioth-kratos/app/data_service/internal/model"
 	"github.com/Jecosine/alioth-kratos/pkg/utils"
 	"github.com/go-kratos/kratos/v2/errors"
 

@@ -1,7 +1,9 @@
 //go:generate go run github.com/99designs/gqlgen generate
 package graph
 
-import "github.com/Jecosine/alioth-kratos/app/data_service/pkg/resolver"
+import (
+	"github.com/Jecosine/alioth-kratos/app/data_service/internal/resolver"
+)
 
 // This file will not be regenerated automatically.
 //

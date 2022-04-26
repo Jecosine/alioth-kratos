@@ -7,17 +7,16 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
-	"fmt"
 	"log"
 	"os"
 )
 
 func main() {
-	wd, err := os.Getwd()
+	_, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%v", wd)
+	//fmt.Printf("%v", wd)
 	ex, err := entgql.NewExtension(
 		entgql.WithWhereFilters(true),
 		entgql.WithConfigPath("./gqlgen.yml"),

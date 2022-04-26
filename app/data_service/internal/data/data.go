@@ -2,10 +2,7 @@ package data
 
 import (
 	"database/sql"
-	"entgo.io/ent/dialect"
-	entsql "entgo.io/ent/dialect/sql"
 	"fmt"
-	"github.com/Jecosine/alioth-kratos/app/data_service/ent"
 	"github.com/Jecosine/alioth-kratos/app/data_service/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -24,7 +21,7 @@ var (
 type Data struct {
 	// TODO wrapped database client
 	db       *mongo.Database
-	postgres *ent.Client
+	postgres *sql.DB
 	log      *log.Helper
 }
 
@@ -47,25 +44,27 @@ func NewMongoDB(c *conf.Data, logger log.Logger) *mongo.Database {
 }
 
 // NewPostgres new a postgresql client
-func NewPostgres(c *conf.Data, logger log.Logger) *ent.Client {
+func NewPostgres(c *conf.Data, logger log.Logger) *sql.DB {
 	logHelper := log.NewHelper(log.With(logger, "module", "data_service"))
 	uri := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s", c.Postgres.Host, c.Postgres.Port, c.Postgres.Username, c.Postgres.Password, c.Postgres.Database)
 	db, err := sql.Open("pgx", uri)
 	if err != nil {
 		panic(err)
 	}
-	drv := entsql.OpenDB(dialect.Postgres, db)
-	client := ent.NewClient(ent.Driver(drv))
-	err = client.Schema.Create(context.Background())
-	if err != nil {
-		logHelper.Warn("cannot connect to postgresql db")
-		panic(err)
-	}
-	return client
+	logHelper.Info("Successfully connect to postgresql")
+	return db
+	//drv := entsql.OpenDB(dialect.Postgres, db)
+	//client := ent.NewClient(ent.Driver(drv))
+	//err = client.Schema.Create(context.Background())
+	//if err != nil {
+	//	logHelper.Warn("cannot connect to postgresql db")
+	//	panic(err)
+	//}
+	//return client
 }
 
 // NewData .
-func NewData(mongodb *mongo.Database, postges *ent.Client, logger log.Logger) (*Data, func(), error) {
+func NewData(mongodb *mongo.Database, postgres *sql.DB, logger log.Logger) (*Data, func(), error) {
 	logHelper := log.NewHelper(log.With(logger, "module", "data_service"))
 
 	cleanup := func() {
@@ -75,7 +74,7 @@ func NewData(mongodb *mongo.Database, postges *ent.Client, logger log.Logger) (*
 	// init mongodb
 	return &Data{
 		db:       mongodb,
-		postgres: postges,
+		postgres: postgres,
 		log:      logHelper,
 	}, cleanup, nil
 }
