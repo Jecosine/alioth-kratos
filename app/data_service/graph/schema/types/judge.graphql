@@ -5,7 +5,15 @@ type JudgeRequest {
     source_code: String!,
     problem: Problem!
 }
-
+type JudgeRecord {
+    id: ID!,
+    user: User!,
+    judgeTime: Time!,
+    finishedTime: Time!,
+    timeCost: Int!,
+    memoryCost: Int!,
+    status: Int!
+}
 type JudgeReply {
     id: ID!,
     user: User!,
