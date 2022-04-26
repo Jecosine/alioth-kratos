@@ -10,7 +10,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/judgerecord"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/predicate"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/problem"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
@@ -27,9 +31,199 @@ func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
 	return uu
 }
 
+// SetNickname sets the "nickname" field.
+func (uu *UserUpdate) SetNickname(s string) *UserUpdate {
+	uu.mutation.SetNickname(s)
+	return uu
+}
+
+// SetEmail sets the "email" field.
+func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
+	uu.mutation.SetEmail(s)
+	return uu
+}
+
+// SetPassword sets the "password" field.
+func (uu *UserUpdate) SetPassword(s string) *UserUpdate {
+	uu.mutation.SetPassword(s)
+	return uu
+}
+
+// SetAvatar sets the "avatar" field.
+func (uu *UserUpdate) SetAvatar(s string) *UserUpdate {
+	uu.mutation.SetAvatar(s)
+	return uu
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAvatar(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetAvatar(*s)
+	}
+	return uu
+}
+
+// AddTeamIDs adds the "teams" edge to the Team entity by IDs.
+func (uu *UserUpdate) AddTeamIDs(ids ...int64) *UserUpdate {
+	uu.mutation.AddTeamIDs(ids...)
+	return uu
+}
+
+// AddTeams adds the "teams" edges to the Team entity.
+func (uu *UserUpdate) AddTeams(t ...*Team) *UserUpdate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uu.AddTeamIDs(ids...)
+}
+
+// SetAnnouncementsID sets the "announcements" edge to the Announcement entity by ID.
+func (uu *UserUpdate) SetAnnouncementsID(id int64) *UserUpdate {
+	uu.mutation.SetAnnouncementsID(id)
+	return uu
+}
+
+// SetNillableAnnouncementsID sets the "announcements" edge to the Announcement entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillableAnnouncementsID(id *int64) *UserUpdate {
+	if id != nil {
+		uu = uu.SetAnnouncementsID(*id)
+	}
+	return uu
+}
+
+// SetAnnouncements sets the "announcements" edge to the Announcement entity.
+func (uu *UserUpdate) SetAnnouncements(a *Announcement) *UserUpdate {
+	return uu.SetAnnouncementsID(a.ID)
+}
+
+// SetRecordsID sets the "records" edge to the JudgeRecord entity by ID.
+func (uu *UserUpdate) SetRecordsID(id int64) *UserUpdate {
+	uu.mutation.SetRecordsID(id)
+	return uu
+}
+
+// SetNillableRecordsID sets the "records" edge to the JudgeRecord entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillableRecordsID(id *int64) *UserUpdate {
+	if id != nil {
+		uu = uu.SetRecordsID(*id)
+	}
+	return uu
+}
+
+// SetRecords sets the "records" edge to the JudgeRecord entity.
+func (uu *UserUpdate) SetRecords(j *JudgeRecord) *UserUpdate {
+	return uu.SetRecordsID(j.ID)
+}
+
+// AddCreatedProblemIDs adds the "created_problems" edge to the Problem entity by IDs.
+func (uu *UserUpdate) AddCreatedProblemIDs(ids ...int64) *UserUpdate {
+	uu.mutation.AddCreatedProblemIDs(ids...)
+	return uu
+}
+
+// AddCreatedProblems adds the "created_problems" edges to the Problem entity.
+func (uu *UserUpdate) AddCreatedProblems(p ...*Problem) *UserUpdate {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddCreatedProblemIDs(ids...)
+}
+
+// AddSolvedProblemIDs adds the "solved_problems" edge to the Problem entity by IDs.
+func (uu *UserUpdate) AddSolvedProblemIDs(ids ...int64) *UserUpdate {
+	uu.mutation.AddSolvedProblemIDs(ids...)
+	return uu
+}
+
+// AddSolvedProblems adds the "solved_problems" edges to the Problem entity.
+func (uu *UserUpdate) AddSolvedProblems(p ...*Problem) *UserUpdate {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddSolvedProblemIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
+}
+
+// ClearTeams clears all "teams" edges to the Team entity.
+func (uu *UserUpdate) ClearTeams() *UserUpdate {
+	uu.mutation.ClearTeams()
+	return uu
+}
+
+// RemoveTeamIDs removes the "teams" edge to Team entities by IDs.
+func (uu *UserUpdate) RemoveTeamIDs(ids ...int64) *UserUpdate {
+	uu.mutation.RemoveTeamIDs(ids...)
+	return uu
+}
+
+// RemoveTeams removes "teams" edges to Team entities.
+func (uu *UserUpdate) RemoveTeams(t ...*Team) *UserUpdate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uu.RemoveTeamIDs(ids...)
+}
+
+// ClearAnnouncements clears the "announcements" edge to the Announcement entity.
+func (uu *UserUpdate) ClearAnnouncements() *UserUpdate {
+	uu.mutation.ClearAnnouncements()
+	return uu
+}
+
+// ClearRecords clears the "records" edge to the JudgeRecord entity.
+func (uu *UserUpdate) ClearRecords() *UserUpdate {
+	uu.mutation.ClearRecords()
+	return uu
+}
+
+// ClearCreatedProblems clears all "created_problems" edges to the Problem entity.
+func (uu *UserUpdate) ClearCreatedProblems() *UserUpdate {
+	uu.mutation.ClearCreatedProblems()
+	return uu
+}
+
+// RemoveCreatedProblemIDs removes the "created_problems" edge to Problem entities by IDs.
+func (uu *UserUpdate) RemoveCreatedProblemIDs(ids ...int64) *UserUpdate {
+	uu.mutation.RemoveCreatedProblemIDs(ids...)
+	return uu
+}
+
+// RemoveCreatedProblems removes "created_problems" edges to Problem entities.
+func (uu *UserUpdate) RemoveCreatedProblems(p ...*Problem) *UserUpdate {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemoveCreatedProblemIDs(ids...)
+}
+
+// ClearSolvedProblems clears all "solved_problems" edges to the Problem entity.
+func (uu *UserUpdate) ClearSolvedProblems() *UserUpdate {
+	uu.mutation.ClearSolvedProblems()
+	return uu
+}
+
+// RemoveSolvedProblemIDs removes the "solved_problems" edge to Problem entities by IDs.
+func (uu *UserUpdate) RemoveSolvedProblemIDs(ids ...int64) *UserUpdate {
+	uu.mutation.RemoveSolvedProblemIDs(ids...)
+	return uu
+}
+
+// RemoveSolvedProblems removes "solved_problems" edges to Problem entities.
+func (uu *UserUpdate) RemoveSolvedProblems(p ...*Problem) *UserUpdate {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemoveSolvedProblemIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -39,12 +233,18 @@ func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
 		affected int
 	)
 	if len(uu.hooks) == 0 {
+		if err = uu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = uu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*UserMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = uu.check(); err != nil {
+				return 0, err
 			}
 			uu.mutation = mutation
 			affected, err = uu.sqlSave(ctx)
@@ -86,13 +286,33 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (uu *UserUpdate) check() error {
+	if v, ok := uu.mutation.Nickname(); ok {
+		if err := user.NicknameValidator(v); err != nil {
+			return &ValidationError{Name: "nickname", err: fmt.Errorf(`ent: validator failed for field "User.nickname": %w`, err)}
+		}
+	}
+	if v, ok := uu.mutation.Password(); ok {
+		if err := user.PasswordValidator(v); err != nil {
+			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
+		}
+	}
+	if v, ok := uu.mutation.Avatar(); ok {
+		if err := user.AvatarValidator(v); err != nil {
+			return &ValidationError{Name: "avatar", err: fmt.Errorf(`ent: validator failed for field "User.avatar": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: user.FieldID,
 			},
 		},
@@ -103,6 +323,266 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := uu.mutation.Nickname(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldNickname,
+		})
+	}
+	if value, ok := uu.mutation.Email(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldEmail,
+		})
+	}
+	if value, ok := uu.mutation.Password(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldPassword,
+		})
+	}
+	if value, ok := uu.mutation.Avatar(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAvatar,
+		})
+	}
+	if uu.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedTeamsIDs(); len(nodes) > 0 && !uu.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.TeamsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.AnnouncementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.AnnouncementsTable,
+			Columns: []string{user.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.AnnouncementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.AnnouncementsTable,
+			Columns: []string{user.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.RecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.RecordsTable,
+			Columns: []string{user.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: judgerecord.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.RecordsTable,
+			Columns: []string{user.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: judgerecord.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.CreatedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedCreatedProblemsIDs(); len(nodes) > 0 && !uu.mutation.CreatedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CreatedProblemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.SolvedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedSolvedProblemsIDs(); len(nodes) > 0 && !uu.mutation.SolvedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.SolvedProblemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -123,9 +603,199 @@ type UserUpdateOne struct {
 	mutation *UserMutation
 }
 
+// SetNickname sets the "nickname" field.
+func (uuo *UserUpdateOne) SetNickname(s string) *UserUpdateOne {
+	uuo.mutation.SetNickname(s)
+	return uuo
+}
+
+// SetEmail sets the "email" field.
+func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
+	uuo.mutation.SetEmail(s)
+	return uuo
+}
+
+// SetPassword sets the "password" field.
+func (uuo *UserUpdateOne) SetPassword(s string) *UserUpdateOne {
+	uuo.mutation.SetPassword(s)
+	return uuo
+}
+
+// SetAvatar sets the "avatar" field.
+func (uuo *UserUpdateOne) SetAvatar(s string) *UserUpdateOne {
+	uuo.mutation.SetAvatar(s)
+	return uuo
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAvatar(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetAvatar(*s)
+	}
+	return uuo
+}
+
+// AddTeamIDs adds the "teams" edge to the Team entity by IDs.
+func (uuo *UserUpdateOne) AddTeamIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.AddTeamIDs(ids...)
+	return uuo
+}
+
+// AddTeams adds the "teams" edges to the Team entity.
+func (uuo *UserUpdateOne) AddTeams(t ...*Team) *UserUpdateOne {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uuo.AddTeamIDs(ids...)
+}
+
+// SetAnnouncementsID sets the "announcements" edge to the Announcement entity by ID.
+func (uuo *UserUpdateOne) SetAnnouncementsID(id int64) *UserUpdateOne {
+	uuo.mutation.SetAnnouncementsID(id)
+	return uuo
+}
+
+// SetNillableAnnouncementsID sets the "announcements" edge to the Announcement entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAnnouncementsID(id *int64) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetAnnouncementsID(*id)
+	}
+	return uuo
+}
+
+// SetAnnouncements sets the "announcements" edge to the Announcement entity.
+func (uuo *UserUpdateOne) SetAnnouncements(a *Announcement) *UserUpdateOne {
+	return uuo.SetAnnouncementsID(a.ID)
+}
+
+// SetRecordsID sets the "records" edge to the JudgeRecord entity by ID.
+func (uuo *UserUpdateOne) SetRecordsID(id int64) *UserUpdateOne {
+	uuo.mutation.SetRecordsID(id)
+	return uuo
+}
+
+// SetNillableRecordsID sets the "records" edge to the JudgeRecord entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableRecordsID(id *int64) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetRecordsID(*id)
+	}
+	return uuo
+}
+
+// SetRecords sets the "records" edge to the JudgeRecord entity.
+func (uuo *UserUpdateOne) SetRecords(j *JudgeRecord) *UserUpdateOne {
+	return uuo.SetRecordsID(j.ID)
+}
+
+// AddCreatedProblemIDs adds the "created_problems" edge to the Problem entity by IDs.
+func (uuo *UserUpdateOne) AddCreatedProblemIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.AddCreatedProblemIDs(ids...)
+	return uuo
+}
+
+// AddCreatedProblems adds the "created_problems" edges to the Problem entity.
+func (uuo *UserUpdateOne) AddCreatedProblems(p ...*Problem) *UserUpdateOne {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddCreatedProblemIDs(ids...)
+}
+
+// AddSolvedProblemIDs adds the "solved_problems" edge to the Problem entity by IDs.
+func (uuo *UserUpdateOne) AddSolvedProblemIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.AddSolvedProblemIDs(ids...)
+	return uuo
+}
+
+// AddSolvedProblems adds the "solved_problems" edges to the Problem entity.
+func (uuo *UserUpdateOne) AddSolvedProblems(p ...*Problem) *UserUpdateOne {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddSolvedProblemIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
+}
+
+// ClearTeams clears all "teams" edges to the Team entity.
+func (uuo *UserUpdateOne) ClearTeams() *UserUpdateOne {
+	uuo.mutation.ClearTeams()
+	return uuo
+}
+
+// RemoveTeamIDs removes the "teams" edge to Team entities by IDs.
+func (uuo *UserUpdateOne) RemoveTeamIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.RemoveTeamIDs(ids...)
+	return uuo
+}
+
+// RemoveTeams removes "teams" edges to Team entities.
+func (uuo *UserUpdateOne) RemoveTeams(t ...*Team) *UserUpdateOne {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uuo.RemoveTeamIDs(ids...)
+}
+
+// ClearAnnouncements clears the "announcements" edge to the Announcement entity.
+func (uuo *UserUpdateOne) ClearAnnouncements() *UserUpdateOne {
+	uuo.mutation.ClearAnnouncements()
+	return uuo
+}
+
+// ClearRecords clears the "records" edge to the JudgeRecord entity.
+func (uuo *UserUpdateOne) ClearRecords() *UserUpdateOne {
+	uuo.mutation.ClearRecords()
+	return uuo
+}
+
+// ClearCreatedProblems clears all "created_problems" edges to the Problem entity.
+func (uuo *UserUpdateOne) ClearCreatedProblems() *UserUpdateOne {
+	uuo.mutation.ClearCreatedProblems()
+	return uuo
+}
+
+// RemoveCreatedProblemIDs removes the "created_problems" edge to Problem entities by IDs.
+func (uuo *UserUpdateOne) RemoveCreatedProblemIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.RemoveCreatedProblemIDs(ids...)
+	return uuo
+}
+
+// RemoveCreatedProblems removes "created_problems" edges to Problem entities.
+func (uuo *UserUpdateOne) RemoveCreatedProblems(p ...*Problem) *UserUpdateOne {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemoveCreatedProblemIDs(ids...)
+}
+
+// ClearSolvedProblems clears all "solved_problems" edges to the Problem entity.
+func (uuo *UserUpdateOne) ClearSolvedProblems() *UserUpdateOne {
+	uuo.mutation.ClearSolvedProblems()
+	return uuo
+}
+
+// RemoveSolvedProblemIDs removes the "solved_problems" edge to Problem entities by IDs.
+func (uuo *UserUpdateOne) RemoveSolvedProblemIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.RemoveSolvedProblemIDs(ids...)
+	return uuo
+}
+
+// RemoveSolvedProblems removes "solved_problems" edges to Problem entities.
+func (uuo *UserUpdateOne) RemoveSolvedProblems(p ...*Problem) *UserUpdateOne {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemoveSolvedProblemIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -142,12 +812,18 @@ func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
 		node *User
 	)
 	if len(uuo.hooks) == 0 {
+		if err = uuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = uuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*UserMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = uuo.check(); err != nil {
+				return nil, err
 			}
 			uuo.mutation = mutation
 			node, err = uuo.sqlSave(ctx)
@@ -189,13 +865,33 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (uuo *UserUpdateOne) check() error {
+	if v, ok := uuo.mutation.Nickname(); ok {
+		if err := user.NicknameValidator(v); err != nil {
+			return &ValidationError{Name: "nickname", err: fmt.Errorf(`ent: validator failed for field "User.nickname": %w`, err)}
+		}
+	}
+	if v, ok := uuo.mutation.Password(); ok {
+		if err := user.PasswordValidator(v); err != nil {
+			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
+		}
+	}
+	if v, ok := uuo.mutation.Avatar(); ok {
+		if err := user.AvatarValidator(v); err != nil {
+			return &ValidationError{Name: "avatar", err: fmt.Errorf(`ent: validator failed for field "User.avatar": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: user.FieldID,
 			},
 		},
@@ -223,6 +919,266 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := uuo.mutation.Nickname(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldNickname,
+		})
+	}
+	if value, ok := uuo.mutation.Email(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldEmail,
+		})
+	}
+	if value, ok := uuo.mutation.Password(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldPassword,
+		})
+	}
+	if value, ok := uuo.mutation.Avatar(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAvatar,
+		})
+	}
+	if uuo.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedTeamsIDs(); len(nodes) > 0 && !uuo.mutation.TeamsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.TeamsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.AnnouncementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.AnnouncementsTable,
+			Columns: []string{user.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.AnnouncementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.AnnouncementsTable,
+			Columns: []string{user.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.RecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.RecordsTable,
+			Columns: []string{user.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: judgerecord.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.RecordsTable,
+			Columns: []string{user.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: judgerecord.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.CreatedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedCreatedProblemsIDs(); len(nodes) > 0 && !uuo.mutation.CreatedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CreatedProblemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.SolvedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedSolvedProblemsIDs(); len(nodes) > 0 && !uuo.mutation.SolvedProblemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.SolvedProblemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues

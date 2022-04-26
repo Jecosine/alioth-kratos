@@ -4,10 +4,16 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/judgerecord"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/problem"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
@@ -16,6 +22,141 @@ type UserCreate struct {
 	config
 	mutation *UserMutation
 	hooks    []Hook
+}
+
+// SetNickname sets the "nickname" field.
+func (uc *UserCreate) SetNickname(s string) *UserCreate {
+	uc.mutation.SetNickname(s)
+	return uc
+}
+
+// SetEmail sets the "email" field.
+func (uc *UserCreate) SetEmail(s string) *UserCreate {
+	uc.mutation.SetEmail(s)
+	return uc
+}
+
+// SetPassword sets the "password" field.
+func (uc *UserCreate) SetPassword(s string) *UserCreate {
+	uc.mutation.SetPassword(s)
+	return uc
+}
+
+// SetAvatar sets the "avatar" field.
+func (uc *UserCreate) SetAvatar(s string) *UserCreate {
+	uc.mutation.SetAvatar(s)
+	return uc
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAvatar(s *string) *UserCreate {
+	if s != nil {
+		uc.SetAvatar(*s)
+	}
+	return uc
+}
+
+// SetCreatedTime sets the "created_time" field.
+func (uc *UserCreate) SetCreatedTime(t time.Time) *UserCreate {
+	uc.mutation.SetCreatedTime(t)
+	return uc
+}
+
+// SetNillableCreatedTime sets the "created_time" field if the given value is not nil.
+func (uc *UserCreate) SetNillableCreatedTime(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetCreatedTime(*t)
+	}
+	return uc
+}
+
+// SetID sets the "id" field.
+func (uc *UserCreate) SetID(i int64) *UserCreate {
+	uc.mutation.SetID(i)
+	return uc
+}
+
+// AddTeamIDs adds the "teams" edge to the Team entity by IDs.
+func (uc *UserCreate) AddTeamIDs(ids ...int64) *UserCreate {
+	uc.mutation.AddTeamIDs(ids...)
+	return uc
+}
+
+// AddTeams adds the "teams" edges to the Team entity.
+func (uc *UserCreate) AddTeams(t ...*Team) *UserCreate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uc.AddTeamIDs(ids...)
+}
+
+// SetAnnouncementsID sets the "announcements" edge to the Announcement entity by ID.
+func (uc *UserCreate) SetAnnouncementsID(id int64) *UserCreate {
+	uc.mutation.SetAnnouncementsID(id)
+	return uc
+}
+
+// SetNillableAnnouncementsID sets the "announcements" edge to the Announcement entity by ID if the given value is not nil.
+func (uc *UserCreate) SetNillableAnnouncementsID(id *int64) *UserCreate {
+	if id != nil {
+		uc = uc.SetAnnouncementsID(*id)
+	}
+	return uc
+}
+
+// SetAnnouncements sets the "announcements" edge to the Announcement entity.
+func (uc *UserCreate) SetAnnouncements(a *Announcement) *UserCreate {
+	return uc.SetAnnouncementsID(a.ID)
+}
+
+// SetRecordsID sets the "records" edge to the JudgeRecord entity by ID.
+func (uc *UserCreate) SetRecordsID(id int64) *UserCreate {
+	uc.mutation.SetRecordsID(id)
+	return uc
+}
+
+// SetNillableRecordsID sets the "records" edge to the JudgeRecord entity by ID if the given value is not nil.
+func (uc *UserCreate) SetNillableRecordsID(id *int64) *UserCreate {
+	if id != nil {
+		uc = uc.SetRecordsID(*id)
+	}
+	return uc
+}
+
+// SetRecords sets the "records" edge to the JudgeRecord entity.
+func (uc *UserCreate) SetRecords(j *JudgeRecord) *UserCreate {
+	return uc.SetRecordsID(j.ID)
+}
+
+// AddCreatedProblemIDs adds the "created_problems" edge to the Problem entity by IDs.
+func (uc *UserCreate) AddCreatedProblemIDs(ids ...int64) *UserCreate {
+	uc.mutation.AddCreatedProblemIDs(ids...)
+	return uc
+}
+
+// AddCreatedProblems adds the "created_problems" edges to the Problem entity.
+func (uc *UserCreate) AddCreatedProblems(p ...*Problem) *UserCreate {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddCreatedProblemIDs(ids...)
+}
+
+// AddSolvedProblemIDs adds the "solved_problems" edge to the Problem entity by IDs.
+func (uc *UserCreate) AddSolvedProblemIDs(ids ...int64) *UserCreate {
+	uc.mutation.AddSolvedProblemIDs(ids...)
+	return uc
+}
+
+// AddSolvedProblems adds the "solved_problems" edges to the Problem entity.
+func (uc *UserCreate) AddSolvedProblems(p ...*Problem) *UserCreate {
+	ids := make([]int64, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddSolvedProblemIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -29,6 +170,7 @@ func (uc *UserCreate) Save(ctx context.Context) (*User, error) {
 		err  error
 		node *User
 	)
+	uc.defaults()
 	if len(uc.hooks) == 0 {
 		if err = uc.check(); err != nil {
 			return nil, err
@@ -86,8 +228,50 @@ func (uc *UserCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (uc *UserCreate) defaults() {
+	if _, ok := uc.mutation.Avatar(); !ok {
+		v := user.DefaultAvatar
+		uc.mutation.SetAvatar(v)
+	}
+	if _, ok := uc.mutation.CreatedTime(); !ok {
+		v := user.DefaultCreatedTime
+		uc.mutation.SetCreatedTime(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (uc *UserCreate) check() error {
+	if _, ok := uc.mutation.Nickname(); !ok {
+		return &ValidationError{Name: "nickname", err: errors.New(`ent: missing required field "User.nickname"`)}
+	}
+	if v, ok := uc.mutation.Nickname(); ok {
+		if err := user.NicknameValidator(v); err != nil {
+			return &ValidationError{Name: "nickname", err: fmt.Errorf(`ent: validator failed for field "User.nickname": %w`, err)}
+		}
+	}
+	if _, ok := uc.mutation.Email(); !ok {
+		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "User.email"`)}
+	}
+	if _, ok := uc.mutation.Password(); !ok {
+		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "User.password"`)}
+	}
+	if v, ok := uc.mutation.Password(); ok {
+		if err := user.PasswordValidator(v); err != nil {
+			return &ValidationError{Name: "password", err: fmt.Errorf(`ent: validator failed for field "User.password": %w`, err)}
+		}
+	}
+	if _, ok := uc.mutation.Avatar(); !ok {
+		return &ValidationError{Name: "avatar", err: errors.New(`ent: missing required field "User.avatar"`)}
+	}
+	if v, ok := uc.mutation.Avatar(); ok {
+		if err := user.AvatarValidator(v); err != nil {
+			return &ValidationError{Name: "avatar", err: fmt.Errorf(`ent: validator failed for field "User.avatar": %w`, err)}
+		}
+	}
+	if _, ok := uc.mutation.CreatedTime(); !ok {
+		return &ValidationError{Name: "created_time", err: errors.New(`ent: missing required field "User.created_time"`)}
+	}
 	return nil
 }
 
@@ -99,8 +283,10 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != _node.ID {
+		id := _spec.ID.Value.(int64)
+		_node.ID = int64(id)
+	}
 	return _node, nil
 }
 
@@ -110,11 +296,152 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: user.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: user.FieldID,
 			},
 		}
 	)
+	if id, ok := uc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
+	}
+	if value, ok := uc.mutation.Nickname(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldNickname,
+		})
+		_node.Nickname = value
+	}
+	if value, ok := uc.mutation.Email(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldEmail,
+		})
+		_node.Email = value
+	}
+	if value, ok := uc.mutation.Password(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldPassword,
+		})
+		_node.Password = value
+	}
+	if value, ok := uc.mutation.Avatar(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: user.FieldAvatar,
+		})
+		_node.Avatar = value
+	}
+	if value, ok := uc.mutation.CreatedTime(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldCreatedTime,
+		})
+		_node.CreatedTime = value
+	}
+	if nodes := uc.mutation.TeamsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.AnnouncementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.AnnouncementsTable,
+			Columns: []string{user.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.announcement_author = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.RecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   user.RecordsTable,
+			Columns: []string{user.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: judgerecord.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.judge_record_user = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.CreatedProblemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CreatedProblemsTable,
+			Columns: []string{user.CreatedProblemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.SolvedProblemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   user.SolvedProblemsTable,
+			Columns: user.SolvedProblemsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -132,6 +459,7 @@ func (ucb *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 	for i := range ucb.builders {
 		func(i int, root context.Context) {
 			builder := ucb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*UserMutation)
 				if !ok {
@@ -159,9 +487,9 @@ func (ucb *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				if specs[i].ID.Value != nil {
+				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
+					nodes[i].ID = int64(id)
 				}
 				return nodes[i], nil
 			})

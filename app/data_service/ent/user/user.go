@@ -2,19 +2,95 @@
 
 package user
 
+import (
+	"time"
+)
+
 const (
 	// Label holds the string label denoting the user type in the database.
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldNickname holds the string denoting the nickname field in the database.
+	FieldNickname = "nickname"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
+	// FieldPassword holds the string denoting the password field in the database.
+	FieldPassword = "password"
+	// FieldAvatar holds the string denoting the avatar field in the database.
+	FieldAvatar = "avatar"
+	// FieldCreatedTime holds the string denoting the created_time field in the database.
+	FieldCreatedTime = "created_time"
+	// EdgeTeams holds the string denoting the teams edge name in mutations.
+	EdgeTeams = "teams"
+	// EdgeAnnouncements holds the string denoting the announcements edge name in mutations.
+	EdgeAnnouncements = "announcements"
+	// EdgeRecords holds the string denoting the records edge name in mutations.
+	EdgeRecords = "records"
+	// EdgeCreatedProblems holds the string denoting the created_problems edge name in mutations.
+	EdgeCreatedProblems = "created_problems"
+	// EdgeSolvedProblems holds the string denoting the solved_problems edge name in mutations.
+	EdgeSolvedProblems = "solved_problems"
 	// Table holds the table name of the user in the database.
 	Table = "users"
+	// TeamsTable is the table that holds the teams relation/edge. The primary key declared below.
+	TeamsTable = "team_members"
+	// TeamsInverseTable is the table name for the Team entity.
+	// It exists in this package in order to avoid circular dependency with the "team" package.
+	TeamsInverseTable = "teams"
+	// AnnouncementsTable is the table that holds the announcements relation/edge.
+	AnnouncementsTable = "users"
+	// AnnouncementsInverseTable is the table name for the Announcement entity.
+	// It exists in this package in order to avoid circular dependency with the "announcement" package.
+	AnnouncementsInverseTable = "announcements"
+	// AnnouncementsColumn is the table column denoting the announcements relation/edge.
+	AnnouncementsColumn = "announcement_author"
+	// RecordsTable is the table that holds the records relation/edge.
+	RecordsTable = "users"
+	// RecordsInverseTable is the table name for the JudgeRecord entity.
+	// It exists in this package in order to avoid circular dependency with the "judgerecord" package.
+	RecordsInverseTable = "judge_records"
+	// RecordsColumn is the table column denoting the records relation/edge.
+	RecordsColumn = "judge_record_user"
+	// CreatedProblemsTable is the table that holds the created_problems relation/edge.
+	CreatedProblemsTable = "problems"
+	// CreatedProblemsInverseTable is the table name for the Problem entity.
+	// It exists in this package in order to avoid circular dependency with the "problem" package.
+	CreatedProblemsInverseTable = "problems"
+	// CreatedProblemsColumn is the table column denoting the created_problems relation/edge.
+	CreatedProblemsColumn = "user_created_problems"
+	// SolvedProblemsTable is the table that holds the solved_problems relation/edge. The primary key declared below.
+	SolvedProblemsTable = "user_solved_problems"
+	// SolvedProblemsInverseTable is the table name for the Problem entity.
+	// It exists in this package in order to avoid circular dependency with the "problem" package.
+	SolvedProblemsInverseTable = "problems"
 )
 
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
+	FieldNickname,
+	FieldEmail,
+	FieldPassword,
+	FieldAvatar,
+	FieldCreatedTime,
 }
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "users"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"announcement_author",
+	"judge_record_user",
+}
+
+var (
+	// TeamsPrimaryKey and TeamsColumn2 are the table columns denoting the
+	// primary key for the teams relation (M2M).
+	TeamsPrimaryKey = []string{"team_id", "user_id"}
+	// SolvedProblemsPrimaryKey and SolvedProblemsColumn2 are the table columns denoting the
+	// primary key for the solved_problems relation (M2M).
+	SolvedProblemsPrimaryKey = []string{"user_id", "problem_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -23,5 +99,23 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
 	return false
 }
+
+var (
+	// NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.
+	NicknameValidator func(string) error
+	// PasswordValidator is a validator for the "password" field. It is called by the builders before save.
+	PasswordValidator func(string) error
+	// DefaultAvatar holds the default value on creation for the "avatar" field.
+	DefaultAvatar string
+	// AvatarValidator is a validator for the "avatar" field. It is called by the builders before save.
+	AvatarValidator func(string) error
+	// DefaultCreatedTime holds the default value on creation for the "created_time" field.
+	DefaultCreatedTime time.Time
+)

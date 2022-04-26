@@ -7,14 +7,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Jecosine/alioth-kratos/app/data_service/pkg/model"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, payload *string) (*model.Todo, error) {
+func (r *mutationResolver) CreateTodo(ctx context.Context, payload *string) (*ent.Todo, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+func (r *queryResolver) Todos(ctx context.Context) ([]*ent.Todo, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

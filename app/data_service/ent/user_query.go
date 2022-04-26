@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -11,7 +12,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/judgerecord"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/predicate"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/problem"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
@@ -24,6 +29,13 @@ type UserQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.User
+	// eager-loading edges.
+	withTeams           *TeamQuery
+	withAnnouncements   *AnnouncementQuery
+	withRecords         *JudgeRecordQuery
+	withCreatedProblems *ProblemQuery
+	withSolvedProblems  *ProblemQuery
+	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,6 +72,116 @@ func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
 	return uq
 }
 
+// QueryTeams chains the current query on the "teams" edge.
+func (uq *UserQuery) QueryTeams() *TeamQuery {
+	query := &TeamQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, user.TeamsTable, user.TeamsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAnnouncements chains the current query on the "announcements" edge.
+func (uq *UserQuery) QueryAnnouncements() *AnnouncementQuery {
+	query := &AnnouncementQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(announcement.Table, announcement.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, user.AnnouncementsTable, user.AnnouncementsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRecords chains the current query on the "records" edge.
+func (uq *UserQuery) QueryRecords() *JudgeRecordQuery {
+	query := &JudgeRecordQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(judgerecord.Table, judgerecord.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, user.RecordsTable, user.RecordsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCreatedProblems chains the current query on the "created_problems" edge.
+func (uq *UserQuery) QueryCreatedProblems() *ProblemQuery {
+	query := &ProblemQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(problem.Table, problem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CreatedProblemsTable, user.CreatedProblemsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySolvedProblems chains the current query on the "solved_problems" edge.
+func (uq *UserQuery) QuerySolvedProblems() *ProblemQuery {
+	query := &ProblemQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(problem.Table, problem.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.SolvedProblemsTable, user.SolvedProblemsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (uq *UserQuery) First(ctx context.Context) (*User, error) {
@@ -84,8 +206,8 @@ func (uq *UserQuery) FirstX(ctx context.Context) *User {
 
 // FirstID returns the first User ID from the query.
 // Returns a *NotFoundError when no User ID was found.
-func (uq *UserQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (uq *UserQuery) FirstID(ctx context.Context) (id int64, err error) {
+	var ids []int64
 	if ids, err = uq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -97,7 +219,7 @@ func (uq *UserQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (uq *UserQuery) FirstIDX(ctx context.Context) int {
+func (uq *UserQuery) FirstIDX(ctx context.Context) int64 {
 	id, err := uq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -135,8 +257,8 @@ func (uq *UserQuery) OnlyX(ctx context.Context) *User {
 // OnlyID is like Only, but returns the only User ID in the query.
 // Returns a *NotSingularError when more than one User ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (uq *UserQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (uq *UserQuery) OnlyID(ctx context.Context) (id int64, err error) {
+	var ids []int64
 	if ids, err = uq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -152,7 +274,7 @@ func (uq *UserQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (uq *UserQuery) OnlyIDX(ctx context.Context) int {
+func (uq *UserQuery) OnlyIDX(ctx context.Context) int64 {
 	id, err := uq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -178,8 +300,8 @@ func (uq *UserQuery) AllX(ctx context.Context) []*User {
 }
 
 // IDs executes the query and returns a list of User IDs.
-func (uq *UserQuery) IDs(ctx context.Context) ([]int, error) {
-	var ids []int
+func (uq *UserQuery) IDs(ctx context.Context) ([]int64, error) {
+	var ids []int64
 	if err := uq.Select(user.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -187,7 +309,7 @@ func (uq *UserQuery) IDs(ctx context.Context) ([]int, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (uq *UserQuery) IDsX(ctx context.Context) []int {
+func (uq *UserQuery) IDsX(ctx context.Context) []int64 {
 	ids, err := uq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -236,11 +358,16 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:     uq.config,
-		limit:      uq.limit,
-		offset:     uq.offset,
-		order:      append([]OrderFunc{}, uq.order...),
-		predicates: append([]predicate.User{}, uq.predicates...),
+		config:              uq.config,
+		limit:               uq.limit,
+		offset:              uq.offset,
+		order:               append([]OrderFunc{}, uq.order...),
+		predicates:          append([]predicate.User{}, uq.predicates...),
+		withTeams:           uq.withTeams.Clone(),
+		withAnnouncements:   uq.withAnnouncements.Clone(),
+		withRecords:         uq.withRecords.Clone(),
+		withCreatedProblems: uq.withCreatedProblems.Clone(),
+		withSolvedProblems:  uq.withSolvedProblems.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -248,8 +375,76 @@ func (uq *UserQuery) Clone() *UserQuery {
 	}
 }
 
+// WithTeams tells the query-builder to eager-load the nodes that are connected to
+// the "teams" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithTeams(opts ...func(*TeamQuery)) *UserQuery {
+	query := &TeamQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withTeams = query
+	return uq
+}
+
+// WithAnnouncements tells the query-builder to eager-load the nodes that are connected to
+// the "announcements" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithAnnouncements(opts ...func(*AnnouncementQuery)) *UserQuery {
+	query := &AnnouncementQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withAnnouncements = query
+	return uq
+}
+
+// WithRecords tells the query-builder to eager-load the nodes that are connected to
+// the "records" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithRecords(opts ...func(*JudgeRecordQuery)) *UserQuery {
+	query := &JudgeRecordQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withRecords = query
+	return uq
+}
+
+// WithCreatedProblems tells the query-builder to eager-load the nodes that are connected to
+// the "created_problems" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithCreatedProblems(opts ...func(*ProblemQuery)) *UserQuery {
+	query := &ProblemQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withCreatedProblems = query
+	return uq
+}
+
+// WithSolvedProblems tells the query-builder to eager-load the nodes that are connected to
+// the "solved_problems" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithSolvedProblems(opts ...func(*ProblemQuery)) *UserQuery {
+	query := &ProblemQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withSolvedProblems = query
+	return uq
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		Nickname string `json:"nickname,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.User.Query().
+//		GroupBy(user.FieldNickname).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
+//
 func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 	group := &UserGroupBy{config: uq.config}
 	group.fields = append([]string{field}, fields...)
@@ -264,6 +459,17 @@ func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		Nickname string `json:"nickname,omitempty"`
+//	}
+//
+//	client.User.Query().
+//		Select(user.FieldNickname).
+//		Scan(ctx, &v)
+//
 func (uq *UserQuery) Select(fields ...string) *UserSelect {
 	uq.fields = append(uq.fields, fields...)
 	return &UserSelect{UserQuery: uq}
@@ -287,9 +493,23 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 
 func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	var (
-		nodes = []*User{}
-		_spec = uq.querySpec()
+		nodes       = []*User{}
+		withFKs     = uq.withFKs
+		_spec       = uq.querySpec()
+		loadedTypes = [5]bool{
+			uq.withTeams != nil,
+			uq.withAnnouncements != nil,
+			uq.withRecords != nil,
+			uq.withCreatedProblems != nil,
+			uq.withSolvedProblems != nil,
+		}
 	)
+	if uq.withAnnouncements != nil || uq.withRecords != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, user.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &User{config: uq.config}
 		nodes = append(nodes, node)
@@ -300,6 +520,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, uq.driver, _spec); err != nil {
@@ -308,6 +529,224 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := uq.withTeams; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int64]*User, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Teams = []*Team{}
+		}
+		var (
+			edgeids []int64
+			edges   = make(map[int64][]*User)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   user.TeamsTable,
+				Columns: user.TeamsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(user.TeamsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := eout.Int64
+				inValue := ein.Int64
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, uq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "teams": %w`, err)
+		}
+		query.Where(team.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "teams" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Teams = append(nodes[i].Edges.Teams, n)
+			}
+		}
+	}
+
+	if query := uq.withAnnouncements; query != nil {
+		ids := make([]int64, 0, len(nodes))
+		nodeids := make(map[int64][]*User)
+		for i := range nodes {
+			if nodes[i].announcement_author == nil {
+				continue
+			}
+			fk := *nodes[i].announcement_author
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(announcement.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "announcement_author" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Announcements = n
+			}
+		}
+	}
+
+	if query := uq.withRecords; query != nil {
+		ids := make([]int64, 0, len(nodes))
+		nodeids := make(map[int64][]*User)
+		for i := range nodes {
+			if nodes[i].judge_record_user == nil {
+				continue
+			}
+			fk := *nodes[i].judge_record_user
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(judgerecord.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "judge_record_user" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Records = n
+			}
+		}
+	}
+
+	if query := uq.withCreatedProblems; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int64]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.CreatedProblems = []*Problem{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Problem(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.CreatedProblemsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.user_created_problems
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "user_created_problems" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "user_created_problems" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.CreatedProblems = append(node.Edges.CreatedProblems, n)
+		}
+	}
+
+	if query := uq.withSolvedProblems; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int64]*User, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.SolvedProblems = []*Problem{}
+		}
+		var (
+			edgeids []int64
+			edges   = make(map[int64][]*User)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: false,
+				Table:   user.SolvedProblemsTable,
+				Columns: user.SolvedProblemsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(user.SolvedProblemsPrimaryKey[0], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := eout.Int64
+				inValue := ein.Int64
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, uq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "solved_problems": %w`, err)
+		}
+		query.Where(problem.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "solved_problems" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.SolvedProblems = append(nodes[i].Edges.SolvedProblems, n)
+			}
+		}
+	}
+
 	return nodes, nil
 }
 
@@ -334,7 +773,7 @@ func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   user.Table,
 			Columns: user.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: user.FieldID,
 			},
 		},

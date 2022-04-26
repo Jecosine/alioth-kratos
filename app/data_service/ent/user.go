@@ -5,16 +5,106 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/judgerecord"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
 // User is the model entity for the User schema.
 type User struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int64 `json:"id,omitempty"`
+	// Nickname holds the value of the "nickname" field.
+	Nickname string `json:"nickname,omitempty"`
+	// Email holds the value of the "email" field.
+	Email string `json:"email,omitempty"`
+	// Password holds the value of the "password" field.
+	Password string `json:"password,omitempty"`
+	// Avatar holds the value of the "avatar" field.
+	Avatar string `json:"avatar,omitempty"`
+	// CreatedTime holds the value of the "created_time" field.
+	CreatedTime time.Time `json:"created_time,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the UserQuery when eager-loading is set.
+	Edges               UserEdges `json:"edges"`
+	announcement_author *int64
+	judge_record_user   *int64
+}
+
+// UserEdges holds the relations/edges for other nodes in the graph.
+type UserEdges struct {
+	// Teams holds the value of the teams edge.
+	Teams []*Team `json:"teams,omitempty"`
+	// Announcements holds the value of the announcements edge.
+	Announcements *Announcement `json:"announcements,omitempty"`
+	// Records holds the value of the records edge.
+	Records *JudgeRecord `json:"records,omitempty"`
+	// CreatedProblems holds the value of the created_problems edge.
+	CreatedProblems []*Problem `json:"created_problems,omitempty"`
+	// SolvedProblems holds the value of the solved_problems edge.
+	SolvedProblems []*Problem `json:"solved_problems,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [5]bool
+}
+
+// TeamsOrErr returns the Teams value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) TeamsOrErr() ([]*Team, error) {
+	if e.loadedTypes[0] {
+		return e.Teams, nil
+	}
+	return nil, &NotLoadedError{edge: "teams"}
+}
+
+// AnnouncementsOrErr returns the Announcements value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) AnnouncementsOrErr() (*Announcement, error) {
+	if e.loadedTypes[1] {
+		if e.Announcements == nil {
+			// The edge announcements was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: announcement.Label}
+		}
+		return e.Announcements, nil
+	}
+	return nil, &NotLoadedError{edge: "announcements"}
+}
+
+// RecordsOrErr returns the Records value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) RecordsOrErr() (*JudgeRecord, error) {
+	if e.loadedTypes[2] {
+		if e.Records == nil {
+			// The edge records was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: judgerecord.Label}
+		}
+		return e.Records, nil
+	}
+	return nil, &NotLoadedError{edge: "records"}
+}
+
+// CreatedProblemsOrErr returns the CreatedProblems value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CreatedProblemsOrErr() ([]*Problem, error) {
+	if e.loadedTypes[3] {
+		return e.CreatedProblems, nil
+	}
+	return nil, &NotLoadedError{edge: "created_problems"}
+}
+
+// SolvedProblemsOrErr returns the SolvedProblems value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SolvedProblemsOrErr() ([]*Problem, error) {
+	if e.loadedTypes[4] {
+		return e.SolvedProblems, nil
+	}
+	return nil, &NotLoadedError{edge: "solved_problems"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -23,6 +113,14 @@ func (*User) scanValues(columns []string) ([]interface{}, error) {
 	for i := range columns {
 		switch columns[i] {
 		case user.FieldID:
+			values[i] = new(sql.NullInt64)
+		case user.FieldNickname, user.FieldEmail, user.FieldPassword, user.FieldAvatar:
+			values[i] = new(sql.NullString)
+		case user.FieldCreatedTime:
+			values[i] = new(sql.NullTime)
+		case user.ForeignKeys[0]: // announcement_author
+			values[i] = new(sql.NullInt64)
+		case user.ForeignKeys[1]: // judge_record_user
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
@@ -44,10 +142,79 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			u.ID = int(value.Int64)
+			u.ID = int64(value.Int64)
+		case user.FieldNickname:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field nickname", values[i])
+			} else if value.Valid {
+				u.Nickname = value.String
+			}
+		case user.FieldEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field email", values[i])
+			} else if value.Valid {
+				u.Email = value.String
+			}
+		case user.FieldPassword:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field password", values[i])
+			} else if value.Valid {
+				u.Password = value.String
+			}
+		case user.FieldAvatar:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field avatar", values[i])
+			} else if value.Valid {
+				u.Avatar = value.String
+			}
+		case user.FieldCreatedTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_time", values[i])
+			} else if value.Valid {
+				u.CreatedTime = value.Time
+			}
+		case user.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field announcement_author", value)
+			} else if value.Valid {
+				u.announcement_author = new(int64)
+				*u.announcement_author = int64(value.Int64)
+			}
+		case user.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field judge_record_user", value)
+			} else if value.Valid {
+				u.judge_record_user = new(int64)
+				*u.judge_record_user = int64(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryTeams queries the "teams" edge of the User entity.
+func (u *User) QueryTeams() *TeamQuery {
+	return (&UserClient{config: u.config}).QueryTeams(u)
+}
+
+// QueryAnnouncements queries the "announcements" edge of the User entity.
+func (u *User) QueryAnnouncements() *AnnouncementQuery {
+	return (&UserClient{config: u.config}).QueryAnnouncements(u)
+}
+
+// QueryRecords queries the "records" edge of the User entity.
+func (u *User) QueryRecords() *JudgeRecordQuery {
+	return (&UserClient{config: u.config}).QueryRecords(u)
+}
+
+// QueryCreatedProblems queries the "created_problems" edge of the User entity.
+func (u *User) QueryCreatedProblems() *ProblemQuery {
+	return (&UserClient{config: u.config}).QueryCreatedProblems(u)
+}
+
+// QuerySolvedProblems queries the "solved_problems" edge of the User entity.
+func (u *User) QuerySolvedProblems() *ProblemQuery {
+	return (&UserClient{config: u.config}).QuerySolvedProblems(u)
 }
 
 // Update returns a builder for updating this User.
@@ -73,6 +240,16 @@ func (u *User) String() string {
 	var builder strings.Builder
 	builder.WriteString("User(")
 	builder.WriteString(fmt.Sprintf("id=%v", u.ID))
+	builder.WriteString(", nickname=")
+	builder.WriteString(u.Nickname)
+	builder.WriteString(", email=")
+	builder.WriteString(u.Email)
+	builder.WriteString(", password=")
+	builder.WriteString(u.Password)
+	builder.WriteString(", avatar=")
+	builder.WriteString(u.Avatar)
+	builder.WriteString(", created_time=")
+	builder.WriteString(u.CreatedTime.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

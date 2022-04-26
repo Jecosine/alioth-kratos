@@ -6,6 +6,21 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Announcement is the predicate function for announcement builders.
+type Announcement func(*sql.Selector)
+
+// JudgeRecord is the predicate function for judgerecord builders.
+type JudgeRecord func(*sql.Selector)
+
+// Problem is the predicate function for problem builders.
+type Problem func(*sql.Selector)
+
+// Tag is the predicate function for tag builders.
+type Tag func(*sql.Selector)
+
+// Team is the predicate function for team builders.
+type Team func(*sql.Selector)
+
 // Todo is the predicate function for todo builders.
 type Todo func(*sql.Selector)
 

@@ -27,6 +27,26 @@ func (tu *TodoUpdate) Where(ps ...predicate.Todo) *TodoUpdate {
 	return tu
 }
 
+// SetText sets the "text" field.
+func (tu *TodoUpdate) SetText(s string) *TodoUpdate {
+	tu.mutation.SetText(s)
+	return tu
+}
+
+// SetDone sets the "done" field.
+func (tu *TodoUpdate) SetDone(b bool) *TodoUpdate {
+	tu.mutation.SetDone(b)
+	return tu
+}
+
+// SetNillableDone sets the "done" field if the given value is not nil.
+func (tu *TodoUpdate) SetNillableDone(b *bool) *TodoUpdate {
+	if b != nil {
+		tu.SetDone(*b)
+	}
+	return tu
+}
+
 // Mutation returns the TodoMutation object of the builder.
 func (tu *TodoUpdate) Mutation() *TodoMutation {
 	return tu.mutation
@@ -39,12 +59,18 @@ func (tu *TodoUpdate) Save(ctx context.Context) (int, error) {
 		affected int
 	)
 	if len(tu.hooks) == 0 {
+		if err = tu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = tu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*TodoMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = tu.check(); err != nil {
+				return 0, err
 			}
 			tu.mutation = mutation
 			affected, err = tu.sqlSave(ctx)
@@ -86,13 +112,23 @@ func (tu *TodoUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tu *TodoUpdate) check() error {
+	if v, ok := tu.mutation.Text(); ok {
+		if err := todo.TextValidator(v); err != nil {
+			return &ValidationError{Name: "text", err: fmt.Errorf(`ent: validator failed for field "Todo.text": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tu *TodoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   todo.Table,
 			Columns: todo.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: todo.FieldID,
 			},
 		},
@@ -103,6 +139,20 @@ func (tu *TodoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := tu.mutation.Text(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: todo.FieldText,
+		})
+	}
+	if value, ok := tu.mutation.Done(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: todo.FieldDone,
+		})
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -121,6 +171,26 @@ type TodoUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *TodoMutation
+}
+
+// SetText sets the "text" field.
+func (tuo *TodoUpdateOne) SetText(s string) *TodoUpdateOne {
+	tuo.mutation.SetText(s)
+	return tuo
+}
+
+// SetDone sets the "done" field.
+func (tuo *TodoUpdateOne) SetDone(b bool) *TodoUpdateOne {
+	tuo.mutation.SetDone(b)
+	return tuo
+}
+
+// SetNillableDone sets the "done" field if the given value is not nil.
+func (tuo *TodoUpdateOne) SetNillableDone(b *bool) *TodoUpdateOne {
+	if b != nil {
+		tuo.SetDone(*b)
+	}
+	return tuo
 }
 
 // Mutation returns the TodoMutation object of the builder.
@@ -142,12 +212,18 @@ func (tuo *TodoUpdateOne) Save(ctx context.Context) (*Todo, error) {
 		node *Todo
 	)
 	if len(tuo.hooks) == 0 {
+		if err = tuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = tuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*TodoMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = tuo.check(); err != nil {
+				return nil, err
 			}
 			tuo.mutation = mutation
 			node, err = tuo.sqlSave(ctx)
@@ -189,13 +265,23 @@ func (tuo *TodoUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tuo *TodoUpdateOne) check() error {
+	if v, ok := tuo.mutation.Text(); ok {
+		if err := todo.TextValidator(v); err != nil {
+			return &ValidationError{Name: "text", err: fmt.Errorf(`ent: validator failed for field "Todo.text": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tuo *TodoUpdateOne) sqlSave(ctx context.Context) (_node *Todo, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   todo.Table,
 			Columns: todo.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: todo.FieldID,
 			},
 		},
@@ -223,6 +309,20 @@ func (tuo *TodoUpdateOne) sqlSave(ctx context.Context) (_node *Todo, err error) 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := tuo.mutation.Text(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: todo.FieldText,
+		})
+	}
+	if value, ok := tuo.mutation.Done(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: todo.FieldDone,
+		})
 	}
 	_node = &Todo{config: tuo.config}
 	_spec.Assign = _node.assignValues

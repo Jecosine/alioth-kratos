@@ -21,7 +21,8 @@ import (
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, confData *conf.Data, jwt *conf.Jwt, logger log.Logger) (*kratos.App, func(), error) {
 	database := data.NewMongoDB(confData, logger)
-	dataData, cleanup, err := data.NewData(database, logger)
+	db := data.NewPostgres(confData, logger)
+	dataData, cleanup, err := data.NewData(database, db, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -32,7 +33,9 @@ func wireApp(confServer *conf.Server, confData *conf.Data, jwt *conf.Jwt, logger
 	greeterRepo := data.NewGreeterRepo(dataData, logger)
 	greeterUsecase := biz.NewGreeterUsecase(greeterRepo, logger)
 	greeterService := service.NewGreeterService(greeterUsecase)
-	httpServer := server.NewHTTPServer(confServer, jwt, authService, baseService, greeterService, logger)
+	driver := biz.NewEntDriver(db)
+	resolver := service.NewResolver(driver)
+	httpServer := server.NewHTTPServer(confServer, jwt, authService, baseService, greeterService, resolver, logger)
 	grpcServer := server.NewGRPCServer(confServer, greeterService, logger)
 	app := newApp(logger, httpServer, grpcServer)
 	return app, func() {

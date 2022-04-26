@@ -8,9 +8,85 @@ import (
 )
 
 var (
+	// AnnouncementsColumns holds the columns for the "announcements" table.
+	AnnouncementsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "content", Type: field.TypeString},
+		{Name: "created_time", Type: field.TypeTime},
+	}
+	// AnnouncementsTable holds the schema information for the "announcements" table.
+	AnnouncementsTable = &schema.Table{
+		Name:       "announcements",
+		Columns:    AnnouncementsColumns,
+		PrimaryKey: []*schema.Column{AnnouncementsColumns[0]},
+	}
+	// JudgeRecordsColumns holds the columns for the "judge_records" table.
+	JudgeRecordsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "judge_time", Type: field.TypeTime},
+		{Name: "finished_time", Type: field.TypeTime},
+		{Name: "time_cost", Type: field.TypeInt64},
+		{Name: "memory_cost", Type: field.TypeInt64},
+		{Name: "status", Type: field.TypeInt64, Default: 0},
+	}
+	// JudgeRecordsTable holds the schema information for the "judge_records" table.
+	JudgeRecordsTable = &schema.Table{
+		Name:       "judge_records",
+		Columns:    JudgeRecordsColumns,
+		PrimaryKey: []*schema.Column{JudgeRecordsColumns[0]},
+	}
+	// ProblemsColumns holds the columns for the "problems" table.
+	ProblemsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "content", Type: field.TypeString},
+		{Name: "created_time", Type: field.TypeTime},
+		{Name: "user_created_problems", Type: field.TypeInt64, Nullable: true},
+	}
+	// ProblemsTable holds the schema information for the "problems" table.
+	ProblemsTable = &schema.Table{
+		Name:       "problems",
+		Columns:    ProblemsColumns,
+		PrimaryKey: []*schema.Column{ProblemsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "problems_users_created_problems",
+				Columns:    []*schema.Column{ProblemsColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// TagsColumns holds the columns for the "tags" table.
+	TagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "created_time", Type: field.TypeTime},
+	}
+	// TagsTable holds the schema information for the "tags" table.
+	TagsTable = &schema.Table{
+		Name:       "tags",
+		Columns:    TagsColumns,
+		PrimaryKey: []*schema.Column{TagsColumns[0]},
+	}
+	// TeamsColumns holds the columns for the "teams" table.
+	TeamsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "created_time", Type: field.TypeTime},
+	}
+	// TeamsTable holds the schema information for the "teams" table.
+	TeamsTable = &schema.Table{
+		Name:       "teams",
+		Columns:    TeamsColumns,
+		PrimaryKey: []*schema.Column{TeamsColumns[0]},
+	}
 	// TodosColumns holds the columns for the "todos" table.
 	TodosColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "text", Type: field.TypeString},
+		{Name: "done", Type: field.TypeBool, Default: false},
 	}
 	// TodosTable holds the schema information for the "todos" table.
 	TodosTable = &schema.Table{
@@ -20,20 +96,133 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "nickname", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString},
+		{Name: "password", Type: field.TypeString},
+		{Name: "avatar", Type: field.TypeString, Default: "test"},
+		{Name: "created_time", Type: field.TypeTime},
+		{Name: "announcement_author", Type: field.TypeInt64, Nullable: true},
+		{Name: "judge_record_user", Type: field.TypeInt64, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "users_announcements_author",
+				Columns:    []*schema.Column{UsersColumns[6]},
+				RefColumns: []*schema.Column{AnnouncementsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "users_judge_records_user",
+				Columns:    []*schema.Column{UsersColumns[7]},
+				RefColumns: []*schema.Column{JudgeRecordsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// ProblemTagsColumns holds the columns for the "problem_tags" table.
+	ProblemTagsColumns = []*schema.Column{
+		{Name: "problem_id", Type: field.TypeInt64},
+		{Name: "tag_id", Type: field.TypeInt64},
+	}
+	// ProblemTagsTable holds the schema information for the "problem_tags" table.
+	ProblemTagsTable = &schema.Table{
+		Name:       "problem_tags",
+		Columns:    ProblemTagsColumns,
+		PrimaryKey: []*schema.Column{ProblemTagsColumns[0], ProblemTagsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "problem_tags_problem_id",
+				Columns:    []*schema.Column{ProblemTagsColumns[0]},
+				RefColumns: []*schema.Column{ProblemsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "problem_tags_tag_id",
+				Columns:    []*schema.Column{ProblemTagsColumns[1]},
+				RefColumns: []*schema.Column{TagsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// TeamMembersColumns holds the columns for the "team_members" table.
+	TeamMembersColumns = []*schema.Column{
+		{Name: "team_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// TeamMembersTable holds the schema information for the "team_members" table.
+	TeamMembersTable = &schema.Table{
+		Name:       "team_members",
+		Columns:    TeamMembersColumns,
+		PrimaryKey: []*schema.Column{TeamMembersColumns[0], TeamMembersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "team_members_team_id",
+				Columns:    []*schema.Column{TeamMembersColumns[0]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "team_members_user_id",
+				Columns:    []*schema.Column{TeamMembersColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// UserSolvedProblemsColumns holds the columns for the "user_solved_problems" table.
+	UserSolvedProblemsColumns = []*schema.Column{
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "problem_id", Type: field.TypeInt64},
+	}
+	// UserSolvedProblemsTable holds the schema information for the "user_solved_problems" table.
+	UserSolvedProblemsTable = &schema.Table{
+		Name:       "user_solved_problems",
+		Columns:    UserSolvedProblemsColumns,
+		PrimaryKey: []*schema.Column{UserSolvedProblemsColumns[0], UserSolvedProblemsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_solved_problems_user_id",
+				Columns:    []*schema.Column{UserSolvedProblemsColumns[0]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "user_solved_problems_problem_id",
+				Columns:    []*schema.Column{UserSolvedProblemsColumns[1]},
+				RefColumns: []*schema.Column{ProblemsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AnnouncementsTable,
+		JudgeRecordsTable,
+		ProblemsTable,
+		TagsTable,
+		TeamsTable,
 		TodosTable,
 		UsersTable,
+		ProblemTagsTable,
+		TeamMembersTable,
+		UserSolvedProblemsTable,
 	}
 )
 
 func init() {
+	ProblemsTable.ForeignKeys[0].RefTable = UsersTable
+	UsersTable.ForeignKeys[0].RefTable = AnnouncementsTable
+	UsersTable.ForeignKeys[1].RefTable = JudgeRecordsTable
+	ProblemTagsTable.ForeignKeys[0].RefTable = ProblemsTable
+	ProblemTagsTable.ForeignKeys[1].RefTable = TagsTable
+	TeamMembersTable.ForeignKeys[0].RefTable = TeamsTable
+	TeamMembersTable.ForeignKeys[1].RefTable = UsersTable
+	UserSolvedProblemsTable.ForeignKeys[0].RefTable = UsersTable
+	UserSolvedProblemsTable.ForeignKeys[1].RefTable = ProblemsTable
 }

@@ -12,6 +12,16 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Announcement is the client for interacting with the Announcement builders.
+	Announcement *AnnouncementClient
+	// JudgeRecord is the client for interacting with the JudgeRecord builders.
+	JudgeRecord *JudgeRecordClient
+	// Problem is the client for interacting with the Problem builders.
+	Problem *ProblemClient
+	// Tag is the client for interacting with the Tag builders.
+	Tag *TagClient
+	// Team is the client for interacting with the Team builders.
+	Team *TeamClient
 	// Todo is the client for interacting with the Todo builders.
 	Todo *TodoClient
 	// User is the client for interacting with the User builders.
@@ -151,6 +161,11 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Announcement = NewAnnouncementClient(tx.config)
+	tx.JudgeRecord = NewJudgeRecordClient(tx.config)
+	tx.Problem = NewProblemClient(tx.config)
+	tx.Tag = NewTagClient(tx.config)
+	tx.Team = NewTeamClient(tx.config)
 	tx.Todo = NewTodoClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
@@ -162,7 +177,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Todo.QueryXXX(), the query will be executed
+// applies a query, for example: Announcement.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

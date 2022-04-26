@@ -9,6 +9,114 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (a *AnnouncementQuery) CollectFields(ctx context.Context, satisfies ...string) *AnnouncementQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		a = a.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return a
+}
+
+func (a *AnnouncementQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *AnnouncementQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "author":
+			a = a.WithAuthor(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return a
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (jr *JudgeRecordQuery) CollectFields(ctx context.Context, satisfies ...string) *JudgeRecordQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		jr = jr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return jr
+}
+
+func (jr *JudgeRecordQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *JudgeRecordQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "user":
+			jr = jr.WithUser(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return jr
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (pr *ProblemQuery) CollectFields(ctx context.Context, satisfies ...string) *ProblemQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		pr = pr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return pr
+}
+
+func (pr *ProblemQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ProblemQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "author":
+			pr = pr.WithAuthor(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		case "solved_by":
+			pr = pr.WithSolvedBy(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		case "tags":
+			pr = pr.WithTags(func(query *TagQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return pr
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (t *TagQuery) CollectFields(ctx context.Context, satisfies ...string) *TagQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		t = t.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return t
+}
+
+func (t *TagQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *TagQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "problems":
+			t = t.WithProblems(func(query *ProblemQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return t
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (t *TeamQuery) CollectFields(ctx context.Context, satisfies ...string) *TeamQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		t = t.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return t
+}
+
+func (t *TeamQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *TeamQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "members":
+			t = t.WithMembers(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
+	return t
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (t *TodoQuery) CollectFields(ctx context.Context, satisfies ...string) *TodoQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		t = t.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -29,5 +137,29 @@ func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) *Use
 }
 
 func (u *UserQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *UserQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "announcements":
+			u = u.WithAnnouncements(func(query *AnnouncementQuery) {
+				query.collectField(ctx, field)
+			})
+		case "created_problems":
+			u = u.WithCreatedProblems(func(query *ProblemQuery) {
+				query.collectField(ctx, field)
+			})
+		case "records":
+			u = u.WithRecords(func(query *JudgeRecordQuery) {
+				query.collectField(ctx, field)
+			})
+		case "solved_problems":
+			u = u.WithSolvedProblems(func(query *ProblemQuery) {
+				query.collectField(ctx, field)
+			})
+		case "teams":
+			u = u.WithTeams(func(query *TeamQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return u
 }

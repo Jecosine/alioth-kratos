@@ -12,9 +12,13 @@ import (
 
 // Todo is the model entity for the Todo schema.
 type Todo struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID int64 `json:"id,omitempty"`
+	// Text holds the value of the "text" field.
+	Text string `json:"text,omitempty"`
+	// Done holds the value of the "done" field.
+	Done bool `json:"done,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -22,8 +26,12 @@ func (*Todo) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case todo.FieldDone:
+			values[i] = new(sql.NullBool)
 		case todo.FieldID:
 			values[i] = new(sql.NullInt64)
+		case todo.FieldText:
+			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Todo", columns[i])
 		}
@@ -44,7 +52,19 @@ func (t *Todo) assignValues(columns []string, values []interface{}) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			t.ID = int(value.Int64)
+			t.ID = int64(value.Int64)
+		case todo.FieldText:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field text", values[i])
+			} else if value.Valid {
+				t.Text = value.String
+			}
+		case todo.FieldDone:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field done", values[i])
+			} else if value.Valid {
+				t.Done = value.Bool
+			}
 		}
 	}
 	return nil
@@ -73,6 +93,10 @@ func (t *Todo) String() string {
 	var builder strings.Builder
 	builder.WriteString("Todo(")
 	builder.WriteString(fmt.Sprintf("id=%v", t.ID))
+	builder.WriteString(", text=")
+	builder.WriteString(t.Text)
+	builder.WriteString(", done=")
+	builder.WriteString(fmt.Sprintf("%v", t.Done))
 	builder.WriteByte(')')
 	return builder.String()
 }

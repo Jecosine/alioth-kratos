@@ -7,11 +7,13 @@ import (
 	"io"
 	"strconv"
 	"time"
+
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent"
 )
 
 type JudgeReply struct {
 	ID           string    `json:"id"`
-	User         *User     `json:"user"`
+	User         *ent.User `json:"user"`
 	JudgeTime    time.Time `json:"judgeTime"`
 	FinishedTime time.Time `json:"finishedTime"`
 	TimeCost     int       `json:"timeCost"`
@@ -20,11 +22,11 @@ type JudgeReply struct {
 }
 
 type JudgeRequest struct {
-	ID          string    `json:"id"`
-	User        *User     `json:"user"`
-	CreatedTime time.Time `json:"createdTime"`
-	SourceCode  string    `json:"source_code"`
-	Problem     *Problem  `json:"problem"`
+	ID          string       `json:"id"`
+	User        *ent.User    `json:"user"`
+	CreatedTime time.Time    `json:"createdTime"`
+	SourceCode  string       `json:"source_code"`
+	Problem     *ent.Problem `json:"problem"`
 }
 
 type NewTodo struct {
@@ -41,15 +43,6 @@ type Privilege struct {
 	Name string `json:"name"`
 }
 
-type Problem struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
-	Author      *User     `json:"author"`
-	Tags        []*Tag    `json:"tags"`
-	CreatedTime time.Time `json:"createdTime"`
-}
-
 type Role struct {
 	ID         string       `json:"id"`
 	Name       string       `json:"name"`
@@ -57,54 +50,24 @@ type Role struct {
 	Privileges []*Privilege `json:"privileges"`
 }
 
-type Tag struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 type Task struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	TaskType   *TaskType  `json:"taskType"`
-	Content    *string    `json:"content"`
-	Assignees  []*User    `json:"assignees"`
-	Status     TaskStatus `json:"status"`
-	ParentList *TaskList  `json:"parentList"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	TaskType   *TaskType   `json:"taskType"`
+	Content    *string     `json:"content"`
+	Assignees  []*ent.User `json:"assignees"`
+	Status     TaskStatus  `json:"status"`
+	ParentList *TaskList   `json:"parentList"`
 }
 
 type TaskList struct {
-	ID           string     `json:"id"`
-	Name         string     `json:"name"`
-	Assignees    []*User    `json:"assignees"`
-	Deadline     time.Time  `json:"deadline"`
-	Status       TaskStatus `json:"status"`
-	RelyTaskList *TaskList  `json:"relyTaskList"`
-	Tasks        []*Task    `json:"tasks"`
-}
-
-type Team struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Members     []*User   `json:"members"`
-	CreatedTime time.Time `json:"createdTime"`
-}
-
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
-}
-
-type User struct {
-	ID          string  `json:"id"`
-	Nickname    string  `json:"nickname"`
-	Email       string  `json:"email"`
-	Password    string  `json:"password"`
-	Avatar      string  `json:"avatar"`
-	CreatedTime int     `json:"createdTime"`
-	Teams       []*Team `json:"teams"`
-	Managed     []*Team `json:"managed"`
+	ID           string      `json:"id"`
+	Name         string      `json:"name"`
+	Assignees    []*ent.User `json:"assignees"`
+	Deadline     time.Time   `json:"deadline"`
+	Status       TaskStatus  `json:"status"`
+	RelyTaskList *TaskList   `json:"relyTaskList"`
+	Tasks        []*Task     `json:"tasks"`
 }
 
 type UserInput struct {

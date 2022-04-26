@@ -8,6 +8,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/judgerecord"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/problem"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/tag"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/todo"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
@@ -30,8 +35,13 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		todo.Table: todo.ValidColumn,
-		user.Table: user.ValidColumn,
+		announcement.Table: announcement.ValidColumn,
+		judgerecord.Table:  judgerecord.ValidColumn,
+		problem.Table:      problem.ValidColumn,
+		tag.Table:          tag.ValidColumn,
+		team.Table:         team.ValidColumn,
+		todo.Table:         todo.ValidColumn,
+		user.Table:         user.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

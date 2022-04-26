@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -18,6 +19,32 @@ type TodoCreate struct {
 	hooks    []Hook
 }
 
+// SetText sets the "text" field.
+func (tc *TodoCreate) SetText(s string) *TodoCreate {
+	tc.mutation.SetText(s)
+	return tc
+}
+
+// SetDone sets the "done" field.
+func (tc *TodoCreate) SetDone(b bool) *TodoCreate {
+	tc.mutation.SetDone(b)
+	return tc
+}
+
+// SetNillableDone sets the "done" field if the given value is not nil.
+func (tc *TodoCreate) SetNillableDone(b *bool) *TodoCreate {
+	if b != nil {
+		tc.SetDone(*b)
+	}
+	return tc
+}
+
+// SetID sets the "id" field.
+func (tc *TodoCreate) SetID(i int64) *TodoCreate {
+	tc.mutation.SetID(i)
+	return tc
+}
+
 // Mutation returns the TodoMutation object of the builder.
 func (tc *TodoCreate) Mutation() *TodoMutation {
 	return tc.mutation
@@ -29,6 +56,7 @@ func (tc *TodoCreate) Save(ctx context.Context) (*Todo, error) {
 		err  error
 		node *Todo
 	)
+	tc.defaults()
 	if len(tc.hooks) == 0 {
 		if err = tc.check(); err != nil {
 			return nil, err
@@ -86,8 +114,27 @@ func (tc *TodoCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (tc *TodoCreate) defaults() {
+	if _, ok := tc.mutation.Done(); !ok {
+		v := todo.DefaultDone
+		tc.mutation.SetDone(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (tc *TodoCreate) check() error {
+	if _, ok := tc.mutation.Text(); !ok {
+		return &ValidationError{Name: "text", err: errors.New(`ent: missing required field "Todo.text"`)}
+	}
+	if v, ok := tc.mutation.Text(); ok {
+		if err := todo.TextValidator(v); err != nil {
+			return &ValidationError{Name: "text", err: fmt.Errorf(`ent: validator failed for field "Todo.text": %w`, err)}
+		}
+	}
+	if _, ok := tc.mutation.Done(); !ok {
+		return &ValidationError{Name: "done", err: errors.New(`ent: missing required field "Todo.done"`)}
+	}
 	return nil
 }
 
@@ -99,8 +146,10 @@ func (tc *TodoCreate) sqlSave(ctx context.Context) (*Todo, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != _node.ID {
+		id := _spec.ID.Value.(int64)
+		_node.ID = int64(id)
+	}
 	return _node, nil
 }
 
@@ -110,11 +159,31 @@ func (tc *TodoCreate) createSpec() (*Todo, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: todo.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeInt64,
 				Column: todo.FieldID,
 			},
 		}
 	)
+	if id, ok := tc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
+	}
+	if value, ok := tc.mutation.Text(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: todo.FieldText,
+		})
+		_node.Text = value
+	}
+	if value, ok := tc.mutation.Done(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: todo.FieldDone,
+		})
+		_node.Done = value
+	}
 	return _node, _spec
 }
 
@@ -132,6 +201,7 @@ func (tcb *TodoCreateBulk) Save(ctx context.Context) ([]*Todo, error) {
 	for i := range tcb.builders {
 		func(i int, root context.Context) {
 			builder := tcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*TodoMutation)
 				if !ok {
@@ -159,9 +229,9 @@ func (tcb *TodoCreateBulk) Save(ctx context.Context) ([]*Todo, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				if specs[i].ID.Value != nil {
+				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
+					nodes[i].ID = int64(id)
 				}
 				return nodes[i], nil
 			})
