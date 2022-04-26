@@ -52,3 +52,35 @@ func TestNewData(t *testing.T) {
 		t.Logf("%v", result.ID())
 	}
 }
+func TestNewPostgres(t *testing.T) {
+	// read conf
+	c := config.New(
+		config.WithSource(
+			file.NewSource("../../config/local.yaml"),
+		),
+	)
+	defer func(c config.Config) {
+		err := c.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(c)
+	if err := c.Load(); err != nil {
+		panic(err)
+	}
+	var bc conf.Bootstrap
+	if err := c.Scan(&bc); err != nil {
+		panic(err)
+	}
+	t.Logf("%v", bc.Data)
+
+	postgres := NewPostgres(bc.Data, log.With(log.NewStdLogger(os.Stdout)))
+	err := postgres.Schema.Create(context.Background())
+	if err != nil {
+		t.Fatalf("cannot create schemas")
+	}
+}
+
+func TestCreateUsers(t *testing.T) {
+
+}
