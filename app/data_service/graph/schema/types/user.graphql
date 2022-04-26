@@ -6,7 +6,11 @@ type User {
     avatar: String!
     createdTime: Int!
     teams: [Team]!
-    managed: [Team]!
+    managed: [Team]!,
+    announcements: [Announcement]!,
+    records: [JudgeRecord]!,
+    createdProblems: [Problem]!,
+    solvedProblems: [Problem]!
 }
 input UserInput {
     email: String!
