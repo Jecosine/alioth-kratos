@@ -33,17 +33,14 @@ func (User) Edges() []ent.Edge {
 		edge.From("announcements", Announcement.Type).
 			Annotations(entgql.Bind()).
 			Ref("author").
-			Annotations(entgql.Bind()),
+			Annotations(entgql.Bind()).Unique(),
 		edge.From("records", JudgeRecord.Type).
 			Annotations(entgql.Bind()).
 			Ref("user").
-			Annotations(entgql.Bind()),
+			Annotations(entgql.Bind()).Unique(),
 		edge.To("created_problems", Problem.Type).
-			Annotations(entgql.Bind()).
-			From("author"),
+			Annotations(entgql.Bind()),
 		edge.To("solved_problems", Problem.Type).
-			Annotations(entgql.Bind()).
-			From("solved_by").
 			Annotations(entgql.Bind()),
 	}
 }

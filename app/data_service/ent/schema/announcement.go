@@ -1,6 +1,12 @@
 package schema
 
-import "entgo.io/ent"
+import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"time"
+)
 
 // Announcement holds the schema definition for the Announcement entity.
 type Announcement struct {
@@ -9,10 +15,17 @@ type Announcement struct {
 
 // Fields of the Announcement.
 func (Announcement) Fields() []ent.Field {
-	return nil
+	return []ent.Field{
+		field.Int64("id").Unique(),
+		field.String("title").NotEmpty(),
+		field.String("content"),
+		field.Time("createdTime").Default(time.Now()).Immutable(),
+	}
 }
 
 // Edges of the Announcement.
 func (Announcement) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("author", User.Type).Annotations(entgql.Bind()),
+	}
 }
