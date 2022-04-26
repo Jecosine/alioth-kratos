@@ -5,6 +5,12 @@ type JudgeRequest {
     source_code: String!,
     problem: Problem!
 }
+input JudgeRequestInput {
+    userId: ID!,
+    problemId: ID!,
+    judgeRecordId: ID!,
+    code: String!,
+}
 type JudgeRecord {
     id: ID!,
     user: User!,
@@ -22,4 +28,14 @@ type JudgeReply {
     timeCost: Int!,
     memoryCost: Int!,
     status: Int!
+}
+
+extend type Mutation {
+    updateJudgeRecord(recordId: ID!): JudgeRecord
+}
+
+extend type Query {
+    getRecordsByProblem(problemId: ID!): [JudgeRecord]!
+    getRecordsByUser(userId: ID!): [JudgeRecord]!
+    getLastRecordByUserAndProblem(problemId: ID!, userId: ID!): JudgeRecord
 }

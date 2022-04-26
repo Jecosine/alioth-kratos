@@ -5,3 +5,17 @@ type Announcement {
     content: String!
     createdTime: Time!,
 }
+
+input AnnouncementInput {
+    title: String!
+    userId: ID!
+    content: String!
+}
+extend type Mutation  {
+    createAnnouncement(announcementInput: AnnouncementInput!): Announcement
+    updateAnnouncement(announcementInput: AnnouncementInput!): Announcement
+    deleteAnnouncement(announcementInput: AnnouncementInput!): Announcement
+}
+extend type Query {
+    getAnnouncements(userId: ID!): [Announcement]
+}

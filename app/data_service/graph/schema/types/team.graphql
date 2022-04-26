@@ -37,3 +37,21 @@ type TaskList {
     relyTaskList: TaskList,
     tasks: [Task!]!,
 }
+
+input TeamInput {
+    name: String!
+    members: [ID!]!
+    authorId: ID!
+}
+extend type Team {
+    addTeam(team: TeamInput!): Team
+    updateTeam(team: TeamInput): Team
+
+}
+
+extend type Query {
+    getTeamByName(teamName: String!): Team
+    getTeamById(teamId: ID!): Team
+    getAvailableTeams: [Team]!
+    teamMembers(teamId: ID!): [User]! @hasRole(role: TEAM_MEMBER)
+}

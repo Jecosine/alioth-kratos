@@ -1,0 +1,5 @@
+type Reply {
+    code: Int!
+    message: String!
+    Data: Any
+}

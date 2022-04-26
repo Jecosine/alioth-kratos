@@ -6,10 +6,10 @@ type User {
     avatar: String!
     createdTime: Time!
     teams: [Team]!
-    managed: [Team]!,
-    announcements: [Announcement]!,
-    records: [JudgeRecord]!,
-    createdProblems: [Problem]!,
+    managed: [Team]!
+    announcements: [Announcement]!
+    records: [JudgeRecord]!
+    createdProblems: [Problem]!
     solvedProblems: [Problem]!
 }
 input UserInput {
@@ -35,9 +35,36 @@ type Privilege {
 input PingInput {
     msg: String!
 }
+
+type Invitation {
+    id: ID!
+    invitee: User!
+    inviter: User!
+    teamId: ID!
+}
+
 # Mutation
 extend type Mutation {
+    # create single user
     createUser(user: UserInput!) : User
+    # batch create users
+    batchCreateUser(users: [UserInput!]!): Reply
+    updateUser(user: UserInput!): User
+    deleteUser(userId: ID!): Reply
+
+    # Team mutation
+    requestJoinTeam(userId: ID!, teamId:ID!): User
+    permitJoinTeam(userId: ID!, teamId:ID!): User
+    quitTeam(userId: ID!, teamId: ID!): User
+    setTeamAdmin(userId:ID!, teamId: ID!): Reply @hasRole(role: TEAM_ADMIN)
+    inviteUser(userId:ID!, teamId:ID!): Reply @hasRole(role: TEAM_ADMIN)
+    acceptInvitation(userId: ID!, teamId:ID!): Reply
+
+    # Problem mutation
+    submitProblem(judgeRequest: JudgeRequestInput!): JudgeRecord
+    starProblem(problemId: ID!): Reply
+    unstarProblem(problemId: ID!): Reply
+
     ping(payload: PingInput!) : String
     pingAuth(payload: PingInput!) : String @hasRole(role: ADMIN)
 }

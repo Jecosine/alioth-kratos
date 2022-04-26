@@ -12,3 +12,17 @@ type Tag {
     name: String!,
     problems: [Problem]!,
 }
+input ProblemInput {
+    title: String!
+    content: String!
+    author: ID!
+    tags: [ID]
+}
+extend type Mutation {
+    addProblem(problem: ProblemInput!): Problem
+    modifyProblem(problem: ProblemInput!): Problem
+    deleteProblem(problemId: ID!): Reply
+}
+extend type Query {
+    getAllProblems: [Problem]!
+}
