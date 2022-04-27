@@ -20,12 +20,14 @@ func (Announcement) Fields() []ent.Field {
 		field.String("title").NotEmpty(),
 		field.String("content"),
 		field.Time("createdTime").Default(time.Now()).Immutable(),
+		field.Time("modifiedTime").Default(time.Now()),
 	}
 }
 
 // Edges of the Announcement.
 func (Announcement) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("author", User.Type).Annotations(entgql.Bind()),
+		edge.To("author", User.Type).Annotations(entgql.Bind()).Unique(),
+		edge.To("team", Team.Type).Annotations(entgql.Bind()).Unique(),
 	}
 }
