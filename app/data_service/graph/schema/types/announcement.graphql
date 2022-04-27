@@ -1,9 +1,11 @@
 type Announcement {
-    id: ID!,
-    title: String!,
-    author: User!,
+    id: ID!
+    title: String!
+    author: User!
     content: String!
-    createdTime: Time!,
+    createdTime: Time!
+    modifiedTime: Time!
+    team: Team
 }
 
 input AnnouncementInput {
@@ -11,10 +13,16 @@ input AnnouncementInput {
     userId: ID!
     content: String!
 }
+input AnnouncementInputWithID {
+    announcementId: ID!
+    title: String!
+    userId: ID!
+    content: String!
+}
 extend type Mutation  {
     createAnnouncement(announcementInput: AnnouncementInput!): Announcement
-    updateAnnouncement(announcementInput: AnnouncementInput!): Announcement
-    deleteAnnouncement(announcementInput: AnnouncementInput!): Announcement
+    updateAnnouncement(announcementInput: AnnouncementInputWithID!): Announcement
+    deleteAnnouncement(announcementId: ID!): Reply
 }
 extend type Query {
     getAnnouncements(userId: ID!): [Announcement]
