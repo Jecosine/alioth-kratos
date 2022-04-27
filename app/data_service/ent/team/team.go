@@ -13,12 +13,20 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldCreatedTime holds the string denoting the created_time field in the database.
 	FieldCreatedTime = "created_time"
+	// FieldPrivate holds the string denoting the private field in the database.
+	FieldPrivate = "private"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
 	// EdgeAnnouncements holds the string denoting the announcements edge name in mutations.
 	EdgeAnnouncements = "announcements"
+	// EdgeCreator holds the string denoting the creator edge name in mutations.
+	EdgeCreator = "creator"
+	// EdgeAdmins holds the string denoting the admins edge name in mutations.
+	EdgeAdmins = "admins"
 	// Table holds the table name of the team in the database.
 	Table = "teams"
 	// MembersTable is the table that holds the members relation/edge. The primary key declared below.
@@ -33,19 +41,42 @@ const (
 	AnnouncementsInverseTable = "announcements"
 	// AnnouncementsColumn is the table column denoting the announcements relation/edge.
 	AnnouncementsColumn = "announcement_team"
+	// CreatorTable is the table that holds the creator relation/edge.
+	CreatorTable = "teams"
+	// CreatorInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	CreatorInverseTable = "users"
+	// CreatorColumn is the table column denoting the creator relation/edge.
+	CreatorColumn = "team_creator"
+	// AdminsTable is the table that holds the admins relation/edge. The primary key declared below.
+	AdminsTable = "team_admins"
+	// AdminsInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	AdminsInverseTable = "users"
 )
 
 // Columns holds all SQL columns for team fields.
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
 	FieldCreatedTime,
+	FieldPrivate,
+}
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "teams"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"team_creator",
 }
 
 var (
 	// MembersPrimaryKey and MembersColumn2 are the table columns denoting the
 	// primary key for the members relation (M2M).
 	MembersPrimaryKey = []string{"team_id", "user_id"}
+	// AdminsPrimaryKey and AdminsColumn2 are the table columns denoting the
+	// primary key for the admins relation (M2M).
+	AdminsPrimaryKey = []string{"team_id", "user_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -55,10 +86,17 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
 	return false
 }
 
 var (
 	// DefaultCreatedTime holds the default value on creation for the "created_time" field.
 	DefaultCreatedTime time.Time
+	// DefaultPrivate holds the default value on creation for the "private" field.
+	DefaultPrivate bool
 )

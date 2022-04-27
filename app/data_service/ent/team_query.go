@@ -30,6 +30,9 @@ type TeamQuery struct {
 	// eager-loading edges.
 	withMembers       *UserQuery
 	withAnnouncements *AnnouncementQuery
+	withCreator       *UserQuery
+	withAdmins        *UserQuery
+	withFKs           bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -103,6 +106,50 @@ func (tq *TeamQuery) QueryAnnouncements() *AnnouncementQuery {
 			sqlgraph.From(team.Table, team.FieldID, selector),
 			sqlgraph.To(announcement.Table, announcement.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, team.AnnouncementsTable, team.AnnouncementsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCreator chains the current query on the "creator" edge.
+func (tq *TeamQuery) QueryCreator() *UserQuery {
+	query := &UserQuery{config: tq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, team.CreatorTable, team.CreatorColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAdmins chains the current query on the "admins" edge.
+func (tq *TeamQuery) QueryAdmins() *UserQuery {
+	query := &UserQuery{config: tq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, team.AdminsTable, team.AdminsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 		return fromU, nil
@@ -293,6 +340,8 @@ func (tq *TeamQuery) Clone() *TeamQuery {
 		predicates:        append([]predicate.Team{}, tq.predicates...),
 		withMembers:       tq.withMembers.Clone(),
 		withAnnouncements: tq.withAnnouncements.Clone(),
+		withCreator:       tq.withCreator.Clone(),
+		withAdmins:        tq.withAdmins.Clone(),
 		// clone intermediate query.
 		sql:    tq.sql.Clone(),
 		path:   tq.path,
@@ -319,6 +368,28 @@ func (tq *TeamQuery) WithAnnouncements(opts ...func(*AnnouncementQuery)) *TeamQu
 		opt(query)
 	}
 	tq.withAnnouncements = query
+	return tq
+}
+
+// WithCreator tells the query-builder to eager-load the nodes that are connected to
+// the "creator" edge. The optional arguments are used to configure the query builder of the edge.
+func (tq *TeamQuery) WithCreator(opts ...func(*UserQuery)) *TeamQuery {
+	query := &UserQuery{config: tq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tq.withCreator = query
+	return tq
+}
+
+// WithAdmins tells the query-builder to eager-load the nodes that are connected to
+// the "admins" edge. The optional arguments are used to configure the query builder of the edge.
+func (tq *TeamQuery) WithAdmins(opts ...func(*UserQuery)) *TeamQuery {
+	query := &UserQuery{config: tq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tq.withAdmins = query
 	return tq
 }
 
@@ -386,12 +457,21 @@ func (tq *TeamQuery) prepareQuery(ctx context.Context) error {
 func (tq *TeamQuery) sqlAll(ctx context.Context) ([]*Team, error) {
 	var (
 		nodes       = []*Team{}
+		withFKs     = tq.withFKs
 		_spec       = tq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			tq.withMembers != nil,
 			tq.withAnnouncements != nil,
+			tq.withCreator != nil,
+			tq.withAdmins != nil,
 		}
 	)
+	if tq.withCreator != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, team.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Team{config: tq.config}
 		nodes = append(nodes, node)
@@ -503,6 +583,100 @@ func (tq *TeamQuery) sqlAll(ctx context.Context) ([]*Team, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "announcement_team" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Announcements = append(node.Edges.Announcements, n)
+		}
+	}
+
+	if query := tq.withCreator; query != nil {
+		ids := make([]int64, 0, len(nodes))
+		nodeids := make(map[int64][]*Team)
+		for i := range nodes {
+			if nodes[i].team_creator == nil {
+				continue
+			}
+			fk := *nodes[i].team_creator
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(user.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "team_creator" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Creator = n
+			}
+		}
+	}
+
+	if query := tq.withAdmins; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int64]*Team, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Admins = []*User{}
+		}
+		var (
+			edgeids []int64
+			edges   = make(map[int64][]*Team)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: false,
+				Table:   team.AdminsTable,
+				Columns: team.AdminsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(team.AdminsPrimaryKey[0], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := eout.Int64
+				inValue := ein.Int64
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, tq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "admins": %w`, err)
+		}
+		query.Where(user.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "admins" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Admins = append(nodes[i].Edges.Admins, n)
+			}
 		}
 	}
 

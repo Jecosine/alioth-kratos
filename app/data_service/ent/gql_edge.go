@@ -76,6 +76,22 @@ func (t *Team) Announcements(ctx context.Context) ([]*Announcement, error) {
 	return result, err
 }
 
+func (t *Team) Creator(ctx context.Context) (*User, error) {
+	result, err := t.Edges.CreatorOrErr()
+	if IsNotLoaded(err) {
+		result, err = t.QueryCreator().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (t *Team) Admins(ctx context.Context) ([]*User, error) {
+	result, err := t.Edges.AdminsOrErr()
+	if IsNotLoaded(err) {
+		result, err = t.QueryAdmins().All(ctx)
+	}
+	return result, err
+}
+
 func (u *User) Teams(ctx context.Context) ([]*Team, error) {
 	result, err := u.Edges.TeamsOrErr()
 	if IsNotLoaded(err) {
@@ -112,6 +128,22 @@ func (u *User) SolvedProblems(ctx context.Context) ([]*Problem, error) {
 	result, err := u.Edges.SolvedProblemsOrErr()
 	if IsNotLoaded(err) {
 		result, err = u.QuerySolvedProblems().All(ctx)
+	}
+	return result, err
+}
+
+func (u *User) Managed(ctx context.Context) ([]*Team, error) {
+	result, err := u.Edges.ManagedOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryManaged().All(ctx)
+	}
+	return result, err
+}
+
+func (u *User) Owned(ctx context.Context) ([]*Team, error) {
+	result, err := u.Edges.OwnedOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryOwned().All(ctx)
 	}
 	return result, err
 }

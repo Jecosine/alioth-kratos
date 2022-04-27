@@ -84,13 +84,24 @@ var (
 	TeamsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString},
 		{Name: "created_time", Type: field.TypeTime},
+		{Name: "private", Type: field.TypeBool, Default: false},
+		{Name: "team_creator", Type: field.TypeInt64, Nullable: true},
 	}
 	// TeamsTable holds the schema information for the "teams" table.
 	TeamsTable = &schema.Table{
 		Name:       "teams",
 		Columns:    TeamsColumns,
 		PrimaryKey: []*schema.Column{TeamsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "teams_users_creator",
+				Columns:    []*schema.Column{TeamsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// TodosColumns holds the columns for the "todos" table.
 	TodosColumns = []*schema.Column{
@@ -185,6 +196,31 @@ var (
 			},
 		},
 	}
+	// TeamAdminsColumns holds the columns for the "team_admins" table.
+	TeamAdminsColumns = []*schema.Column{
+		{Name: "team_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// TeamAdminsTable holds the schema information for the "team_admins" table.
+	TeamAdminsTable = &schema.Table{
+		Name:       "team_admins",
+		Columns:    TeamAdminsColumns,
+		PrimaryKey: []*schema.Column{TeamAdminsColumns[0], TeamAdminsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "team_admins_team_id",
+				Columns:    []*schema.Column{TeamAdminsColumns[0]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "team_admins_user_id",
+				Columns:    []*schema.Column{TeamAdminsColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// UserSolvedProblemsColumns holds the columns for the "user_solved_problems" table.
 	UserSolvedProblemsColumns = []*schema.Column{
 		{Name: "user_id", Type: field.TypeInt64},
@@ -221,6 +257,7 @@ var (
 		UsersTable,
 		ProblemTagsTable,
 		TeamMembersTable,
+		TeamAdminsTable,
 		UserSolvedProblemsTable,
 	}
 )
@@ -228,12 +265,15 @@ var (
 func init() {
 	AnnouncementsTable.ForeignKeys[0].RefTable = TeamsTable
 	ProblemsTable.ForeignKeys[0].RefTable = UsersTable
+	TeamsTable.ForeignKeys[0].RefTable = UsersTable
 	UsersTable.ForeignKeys[0].RefTable = AnnouncementsTable
 	UsersTable.ForeignKeys[1].RefTable = JudgeRecordsTable
 	ProblemTagsTable.ForeignKeys[0].RefTable = ProblemsTable
 	ProblemTagsTable.ForeignKeys[1].RefTable = TagsTable
 	TeamMembersTable.ForeignKeys[0].RefTable = TeamsTable
 	TeamMembersTable.ForeignKeys[1].RefTable = UsersTable
+	TeamAdminsTable.ForeignKeys[0].RefTable = TeamsTable
+	TeamAdminsTable.ForeignKeys[1].RefTable = UsersTable
 	UserSolvedProblemsTable.ForeignKeys[0].RefTable = UsersTable
 	UserSolvedProblemsTable.ForeignKeys[1].RefTable = ProblemsTable
 }

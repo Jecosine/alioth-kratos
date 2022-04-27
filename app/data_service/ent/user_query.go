@@ -35,6 +35,8 @@ type UserQuery struct {
 	withRecords         *JudgeRecordQuery
 	withCreatedProblems *ProblemQuery
 	withSolvedProblems  *ProblemQuery
+	withManaged         *TeamQuery
+	withOwned           *TeamQuery
 	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -175,6 +177,50 @@ func (uq *UserQuery) QuerySolvedProblems() *ProblemQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(problem.Table, problem.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.SolvedProblemsTable, user.SolvedProblemsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryManaged chains the current query on the "managed" edge.
+func (uq *UserQuery) QueryManaged() *TeamQuery {
+	query := &TeamQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, user.ManagedTable, user.ManagedPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOwned chains the current query on the "owned" edge.
+func (uq *UserQuery) QueryOwned() *TeamQuery {
+	query := &TeamQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.OwnedTable, user.OwnedColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -368,6 +414,8 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withRecords:         uq.withRecords.Clone(),
 		withCreatedProblems: uq.withCreatedProblems.Clone(),
 		withSolvedProblems:  uq.withSolvedProblems.Clone(),
+		withManaged:         uq.withManaged.Clone(),
+		withOwned:           uq.withOwned.Clone(),
 		// clone intermediate query.
 		sql:    uq.sql.Clone(),
 		path:   uq.path,
@@ -427,6 +475,28 @@ func (uq *UserQuery) WithSolvedProblems(opts ...func(*ProblemQuery)) *UserQuery 
 		opt(query)
 	}
 	uq.withSolvedProblems = query
+	return uq
+}
+
+// WithManaged tells the query-builder to eager-load the nodes that are connected to
+// the "managed" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithManaged(opts ...func(*TeamQuery)) *UserQuery {
+	query := &TeamQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withManaged = query
+	return uq
+}
+
+// WithOwned tells the query-builder to eager-load the nodes that are connected to
+// the "owned" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithOwned(opts ...func(*TeamQuery)) *UserQuery {
+	query := &TeamQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withOwned = query
 	return uq
 }
 
@@ -496,12 +566,14 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 		nodes       = []*User{}
 		withFKs     = uq.withFKs
 		_spec       = uq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [7]bool{
 			uq.withTeams != nil,
 			uq.withAnnouncements != nil,
 			uq.withRecords != nil,
 			uq.withCreatedProblems != nil,
 			uq.withSolvedProblems != nil,
+			uq.withManaged != nil,
+			uq.withOwned != nil,
 		}
 	)
 	if uq.withAnnouncements != nil || uq.withRecords != nil {
@@ -744,6 +816,100 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 			for i := range nodes {
 				nodes[i].Edges.SolvedProblems = append(nodes[i].Edges.SolvedProblems, n)
 			}
+		}
+	}
+
+	if query := uq.withManaged; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int64]*User, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Managed = []*Team{}
+		}
+		var (
+			edgeids []int64
+			edges   = make(map[int64][]*User)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   user.ManagedTable,
+				Columns: user.ManagedPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(user.ManagedPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := eout.Int64
+				inValue := ein.Int64
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, uq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "managed": %w`, err)
+		}
+		query.Where(team.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "managed" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Managed = append(nodes[i].Edges.Managed, n)
+			}
+		}
+	}
+
+	if query := uq.withOwned; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int64]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Owned = []*Team{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Team(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.OwnedColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.team_creator
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "team_creator" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "team_creator" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Owned = append(node.Edges.Owned, n)
 		}
 	}
 

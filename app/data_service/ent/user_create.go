@@ -159,6 +159,36 @@ func (uc *UserCreate) AddSolvedProblems(p ...*Problem) *UserCreate {
 	return uc.AddSolvedProblemIDs(ids...)
 }
 
+// AddManagedIDs adds the "managed" edge to the Team entity by IDs.
+func (uc *UserCreate) AddManagedIDs(ids ...int64) *UserCreate {
+	uc.mutation.AddManagedIDs(ids...)
+	return uc
+}
+
+// AddManaged adds the "managed" edges to the Team entity.
+func (uc *UserCreate) AddManaged(t ...*Team) *UserCreate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uc.AddManagedIDs(ids...)
+}
+
+// AddOwnedIDs adds the "owned" edge to the Team entity by IDs.
+func (uc *UserCreate) AddOwnedIDs(ids ...int64) *UserCreate {
+	uc.mutation.AddOwnedIDs(ids...)
+	return uc
+}
+
+// AddOwned adds the "owned" edges to the Team entity.
+func (uc *UserCreate) AddOwned(t ...*Team) *UserCreate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uc.AddOwnedIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -434,6 +464,44 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
 					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.ManagedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.OwnedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
 				},
 			},
 		}

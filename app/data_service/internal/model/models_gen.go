@@ -123,9 +123,18 @@ type TaskList struct {
 }
 
 type TeamInput struct {
-	Name     string  `json:"name"`
-	Members  []int64 `json:"members"`
-	AuthorID int64   `json:"authorId"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	OperatorID  int64    `json:"operatorId"`
+	Members     []*int64 `json:"members"`
+	Admins      []*int64 `json:"admins"`
+}
+
+type TeamInputWithID struct {
+	TeamID      int64  `json:"teamId"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	OperatorID  int64  `json:"operatorId"`
 }
 
 type UserInput struct {
@@ -178,6 +187,7 @@ type RoleType string
 
 const (
 	RoleTypeAdmin      RoleType = "ADMIN"
+	RoleTypeTeamOwner  RoleType = "TEAM_OWNER"
 	RoleTypeTeamAdmin  RoleType = "TEAM_ADMIN"
 	RoleTypeTeamMember RoleType = "TEAM_MEMBER"
 	RoleTypeUser       RoleType = "USER"
@@ -185,6 +195,7 @@ const (
 
 var AllRoleType = []RoleType{
 	RoleTypeAdmin,
+	RoleTypeTeamOwner,
 	RoleTypeTeamAdmin,
 	RoleTypeTeamMember,
 	RoleTypeUser,
@@ -192,7 +203,7 @@ var AllRoleType = []RoleType{
 
 func (e RoleType) IsValid() bool {
 	switch e {
-	case RoleTypeAdmin, RoleTypeTeamAdmin, RoleTypeTeamMember, RoleTypeUser:
+	case RoleTypeAdmin, RoleTypeTeamOwner, RoleTypeTeamAdmin, RoleTypeTeamMember, RoleTypeUser:
 		return true
 	}
 	return false

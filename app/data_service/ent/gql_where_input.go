@@ -1221,6 +1221,21 @@ type TeamWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
+	// "description" field predicates.
+	Description             *string  `json:"description,omitempty"`
+	DescriptionNEQ          *string  `json:"descriptionNEQ,omitempty"`
+	DescriptionIn           []string `json:"descriptionIn,omitempty"`
+	DescriptionNotIn        []string `json:"descriptionNotIn,omitempty"`
+	DescriptionGT           *string  `json:"descriptionGT,omitempty"`
+	DescriptionGTE          *string  `json:"descriptionGTE,omitempty"`
+	DescriptionLT           *string  `json:"descriptionLT,omitempty"`
+	DescriptionLTE          *string  `json:"descriptionLTE,omitempty"`
+	DescriptionContains     *string  `json:"descriptionContains,omitempty"`
+	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix,omitempty"`
+	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix,omitempty"`
+	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
+	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
+
 	// "created_time" field predicates.
 	CreatedTime      *time.Time  `json:"createdTime,omitempty"`
 	CreatedTimeNEQ   *time.Time  `json:"createdTimeNEQ,omitempty"`
@@ -1231,6 +1246,10 @@ type TeamWhereInput struct {
 	CreatedTimeLT    *time.Time  `json:"createdTimeLT,omitempty"`
 	CreatedTimeLTE   *time.Time  `json:"createdTimeLTE,omitempty"`
 
+	// "private" field predicates.
+	Private    *bool `json:"private,omitempty"`
+	PrivateNEQ *bool `json:"privateNEQ,omitempty"`
+
 	// "members" edge predicates.
 	HasMembers     *bool             `json:"hasMembers,omitempty"`
 	HasMembersWith []*UserWhereInput `json:"hasMembersWith,omitempty"`
@@ -1238,6 +1257,14 @@ type TeamWhereInput struct {
 	// "announcements" edge predicates.
 	HasAnnouncements     *bool                     `json:"hasAnnouncements,omitempty"`
 	HasAnnouncementsWith []*AnnouncementWhereInput `json:"hasAnnouncementsWith,omitempty"`
+
+	// "creator" edge predicates.
+	HasCreator     *bool             `json:"hasCreator,omitempty"`
+	HasCreatorWith []*UserWhereInput `json:"hasCreatorWith,omitempty"`
+
+	// "admins" edge predicates.
+	HasAdmins     *bool             `json:"hasAdmins,omitempty"`
+	HasAdminsWith []*UserWhereInput `json:"hasAdminsWith,omitempty"`
 }
 
 // Filter applies the TeamWhereInput filter on the TeamQuery builder.
@@ -1362,6 +1389,45 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, team.NameContainsFold(*i.NameContainsFold))
 	}
+	if i.Description != nil {
+		predicates = append(predicates, team.DescriptionEQ(*i.Description))
+	}
+	if i.DescriptionNEQ != nil {
+		predicates = append(predicates, team.DescriptionNEQ(*i.DescriptionNEQ))
+	}
+	if len(i.DescriptionIn) > 0 {
+		predicates = append(predicates, team.DescriptionIn(i.DescriptionIn...))
+	}
+	if len(i.DescriptionNotIn) > 0 {
+		predicates = append(predicates, team.DescriptionNotIn(i.DescriptionNotIn...))
+	}
+	if i.DescriptionGT != nil {
+		predicates = append(predicates, team.DescriptionGT(*i.DescriptionGT))
+	}
+	if i.DescriptionGTE != nil {
+		predicates = append(predicates, team.DescriptionGTE(*i.DescriptionGTE))
+	}
+	if i.DescriptionLT != nil {
+		predicates = append(predicates, team.DescriptionLT(*i.DescriptionLT))
+	}
+	if i.DescriptionLTE != nil {
+		predicates = append(predicates, team.DescriptionLTE(*i.DescriptionLTE))
+	}
+	if i.DescriptionContains != nil {
+		predicates = append(predicates, team.DescriptionContains(*i.DescriptionContains))
+	}
+	if i.DescriptionHasPrefix != nil {
+		predicates = append(predicates, team.DescriptionHasPrefix(*i.DescriptionHasPrefix))
+	}
+	if i.DescriptionHasSuffix != nil {
+		predicates = append(predicates, team.DescriptionHasSuffix(*i.DescriptionHasSuffix))
+	}
+	if i.DescriptionEqualFold != nil {
+		predicates = append(predicates, team.DescriptionEqualFold(*i.DescriptionEqualFold))
+	}
+	if i.DescriptionContainsFold != nil {
+		predicates = append(predicates, team.DescriptionContainsFold(*i.DescriptionContainsFold))
+	}
 	if i.CreatedTime != nil {
 		predicates = append(predicates, team.CreatedTimeEQ(*i.CreatedTime))
 	}
@@ -1385,6 +1451,12 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 	}
 	if i.CreatedTimeLTE != nil {
 		predicates = append(predicates, team.CreatedTimeLTE(*i.CreatedTimeLTE))
+	}
+	if i.Private != nil {
+		predicates = append(predicates, team.PrivateEQ(*i.Private))
+	}
+	if i.PrivateNEQ != nil {
+		predicates = append(predicates, team.PrivateNEQ(*i.PrivateNEQ))
 	}
 
 	if i.HasMembers != nil {
@@ -1422,6 +1494,42 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, team.HasAnnouncementsWith(with...))
+	}
+	if i.HasCreator != nil {
+		p := team.HasCreator()
+		if !*i.HasCreator {
+			p = team.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasCreatorWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasCreatorWith))
+		for _, w := range i.HasCreatorWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, team.HasCreatorWith(with...))
+	}
+	if i.HasAdmins != nil {
+		p := team.HasAdmins()
+		if !*i.HasAdmins {
+			p = team.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasAdminsWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasAdminsWith))
+		for _, w := range i.HasAdminsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, team.HasAdminsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -1713,6 +1821,14 @@ type UserWhereInput struct {
 	// "solved_problems" edge predicates.
 	HasSolvedProblems     *bool                `json:"hasSolvedProblems,omitempty"`
 	HasSolvedProblemsWith []*ProblemWhereInput `json:"hasSolvedProblemsWith,omitempty"`
+
+	// "managed" edge predicates.
+	HasManaged     *bool             `json:"hasManaged,omitempty"`
+	HasManagedWith []*TeamWhereInput `json:"hasManagedWith,omitempty"`
+
+	// "owned" edge predicates.
+	HasOwned     *bool             `json:"hasOwned,omitempty"`
+	HasOwnedWith []*TeamWhereInput `json:"hasOwnedWith,omitempty"`
 }
 
 // Filter applies the UserWhereInput filter on the UserQuery builder.
@@ -2068,6 +2184,42 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasSolvedProblemsWith(with...))
+	}
+	if i.HasManaged != nil {
+		p := user.HasManaged()
+		if !*i.HasManaged {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasManagedWith) > 0 {
+		with := make([]predicate.Team, 0, len(i.HasManagedWith))
+		for _, w := range i.HasManagedWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasManagedWith(with...))
+	}
+	if i.HasOwned != nil {
+		p := user.HasOwned()
+		if !*i.HasOwned {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnedWith) > 0 {
+		with := make([]predicate.Team, 0, len(i.HasOwnedWith))
+		for _, w := range i.HasOwnedWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasOwnedWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

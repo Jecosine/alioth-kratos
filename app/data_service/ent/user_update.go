@@ -146,6 +146,36 @@ func (uu *UserUpdate) AddSolvedProblems(p ...*Problem) *UserUpdate {
 	return uu.AddSolvedProblemIDs(ids...)
 }
 
+// AddManagedIDs adds the "managed" edge to the Team entity by IDs.
+func (uu *UserUpdate) AddManagedIDs(ids ...int64) *UserUpdate {
+	uu.mutation.AddManagedIDs(ids...)
+	return uu
+}
+
+// AddManaged adds the "managed" edges to the Team entity.
+func (uu *UserUpdate) AddManaged(t ...*Team) *UserUpdate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uu.AddManagedIDs(ids...)
+}
+
+// AddOwnedIDs adds the "owned" edge to the Team entity by IDs.
+func (uu *UserUpdate) AddOwnedIDs(ids ...int64) *UserUpdate {
+	uu.mutation.AddOwnedIDs(ids...)
+	return uu
+}
+
+// AddOwned adds the "owned" edges to the Team entity.
+func (uu *UserUpdate) AddOwned(t ...*Team) *UserUpdate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uu.AddOwnedIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -224,6 +254,48 @@ func (uu *UserUpdate) RemoveSolvedProblems(p ...*Problem) *UserUpdate {
 		ids[i] = p[i].ID
 	}
 	return uu.RemoveSolvedProblemIDs(ids...)
+}
+
+// ClearManaged clears all "managed" edges to the Team entity.
+func (uu *UserUpdate) ClearManaged() *UserUpdate {
+	uu.mutation.ClearManaged()
+	return uu
+}
+
+// RemoveManagedIDs removes the "managed" edge to Team entities by IDs.
+func (uu *UserUpdate) RemoveManagedIDs(ids ...int64) *UserUpdate {
+	uu.mutation.RemoveManagedIDs(ids...)
+	return uu
+}
+
+// RemoveManaged removes "managed" edges to Team entities.
+func (uu *UserUpdate) RemoveManaged(t ...*Team) *UserUpdate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uu.RemoveManagedIDs(ids...)
+}
+
+// ClearOwned clears all "owned" edges to the Team entity.
+func (uu *UserUpdate) ClearOwned() *UserUpdate {
+	uu.mutation.ClearOwned()
+	return uu
+}
+
+// RemoveOwnedIDs removes the "owned" edge to Team entities by IDs.
+func (uu *UserUpdate) RemoveOwnedIDs(ids ...int64) *UserUpdate {
+	uu.mutation.RemoveOwnedIDs(ids...)
+	return uu
+}
+
+// RemoveOwned removes "owned" edges to Team entities.
+func (uu *UserUpdate) RemoveOwned(t ...*Team) *UserUpdate {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uu.RemoveOwnedIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -584,6 +656,114 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if uu.mutation.ManagedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedManagedIDs(); len(nodes) > 0 && !uu.mutation.ManagedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.ManagedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.OwnedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedOwnedIDs(); len(nodes) > 0 && !uu.mutation.OwnedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.OwnedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -718,6 +898,36 @@ func (uuo *UserUpdateOne) AddSolvedProblems(p ...*Problem) *UserUpdateOne {
 	return uuo.AddSolvedProblemIDs(ids...)
 }
 
+// AddManagedIDs adds the "managed" edge to the Team entity by IDs.
+func (uuo *UserUpdateOne) AddManagedIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.AddManagedIDs(ids...)
+	return uuo
+}
+
+// AddManaged adds the "managed" edges to the Team entity.
+func (uuo *UserUpdateOne) AddManaged(t ...*Team) *UserUpdateOne {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uuo.AddManagedIDs(ids...)
+}
+
+// AddOwnedIDs adds the "owned" edge to the Team entity by IDs.
+func (uuo *UserUpdateOne) AddOwnedIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.AddOwnedIDs(ids...)
+	return uuo
+}
+
+// AddOwned adds the "owned" edges to the Team entity.
+func (uuo *UserUpdateOne) AddOwned(t ...*Team) *UserUpdateOne {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uuo.AddOwnedIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -796,6 +1006,48 @@ func (uuo *UserUpdateOne) RemoveSolvedProblems(p ...*Problem) *UserUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return uuo.RemoveSolvedProblemIDs(ids...)
+}
+
+// ClearManaged clears all "managed" edges to the Team entity.
+func (uuo *UserUpdateOne) ClearManaged() *UserUpdateOne {
+	uuo.mutation.ClearManaged()
+	return uuo
+}
+
+// RemoveManagedIDs removes the "managed" edge to Team entities by IDs.
+func (uuo *UserUpdateOne) RemoveManagedIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.RemoveManagedIDs(ids...)
+	return uuo
+}
+
+// RemoveManaged removes "managed" edges to Team entities.
+func (uuo *UserUpdateOne) RemoveManaged(t ...*Team) *UserUpdateOne {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uuo.RemoveManagedIDs(ids...)
+}
+
+// ClearOwned clears all "owned" edges to the Team entity.
+func (uuo *UserUpdateOne) ClearOwned() *UserUpdateOne {
+	uuo.mutation.ClearOwned()
+	return uuo
+}
+
+// RemoveOwnedIDs removes the "owned" edge to Team entities by IDs.
+func (uuo *UserUpdateOne) RemoveOwnedIDs(ids ...int64) *UserUpdateOne {
+	uuo.mutation.RemoveOwnedIDs(ids...)
+	return uuo
+}
+
+// RemoveOwned removes "owned" edges to Team entities.
+func (uuo *UserUpdateOne) RemoveOwned(t ...*Team) *UserUpdateOne {
+	ids := make([]int64, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return uuo.RemoveOwnedIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1172,6 +1424,114 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
 					Column: problem.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.ManagedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedManagedIDs(); len(nodes) > 0 && !uuo.mutation.ManagedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.ManagedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.ManagedTable,
+			Columns: user.ManagedPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.OwnedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedOwnedIDs(); len(nodes) > 0 && !uuo.mutation.OwnedCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.OwnedIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.OwnedTable,
+			Columns: []string{user.OwnedColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
 				},
 			},
 		}

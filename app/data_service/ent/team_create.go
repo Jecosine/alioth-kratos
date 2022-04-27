@@ -28,6 +28,12 @@ func (tc *TeamCreate) SetName(s string) *TeamCreate {
 	return tc
 }
 
+// SetDescription sets the "description" field.
+func (tc *TeamCreate) SetDescription(s string) *TeamCreate {
+	tc.mutation.SetDescription(s)
+	return tc
+}
+
 // SetCreatedTime sets the "created_time" field.
 func (tc *TeamCreate) SetCreatedTime(t time.Time) *TeamCreate {
 	tc.mutation.SetCreatedTime(t)
@@ -38,6 +44,20 @@ func (tc *TeamCreate) SetCreatedTime(t time.Time) *TeamCreate {
 func (tc *TeamCreate) SetNillableCreatedTime(t *time.Time) *TeamCreate {
 	if t != nil {
 		tc.SetCreatedTime(*t)
+	}
+	return tc
+}
+
+// SetPrivate sets the "private" field.
+func (tc *TeamCreate) SetPrivate(b bool) *TeamCreate {
+	tc.mutation.SetPrivate(b)
+	return tc
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (tc *TeamCreate) SetNillablePrivate(b *bool) *TeamCreate {
+	if b != nil {
+		tc.SetPrivate(*b)
 	}
 	return tc
 }
@@ -76,6 +96,40 @@ func (tc *TeamCreate) AddAnnouncements(a ...*Announcement) *TeamCreate {
 		ids[i] = a[i].ID
 	}
 	return tc.AddAnnouncementIDs(ids...)
+}
+
+// SetCreatorID sets the "creator" edge to the User entity by ID.
+func (tc *TeamCreate) SetCreatorID(id int64) *TeamCreate {
+	tc.mutation.SetCreatorID(id)
+	return tc
+}
+
+// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
+func (tc *TeamCreate) SetNillableCreatorID(id *int64) *TeamCreate {
+	if id != nil {
+		tc = tc.SetCreatorID(*id)
+	}
+	return tc
+}
+
+// SetCreator sets the "creator" edge to the User entity.
+func (tc *TeamCreate) SetCreator(u *User) *TeamCreate {
+	return tc.SetCreatorID(u.ID)
+}
+
+// AddAdminIDs adds the "admins" edge to the User entity by IDs.
+func (tc *TeamCreate) AddAdminIDs(ids ...int64) *TeamCreate {
+	tc.mutation.AddAdminIDs(ids...)
+	return tc
+}
+
+// AddAdmins adds the "admins" edges to the User entity.
+func (tc *TeamCreate) AddAdmins(u ...*User) *TeamCreate {
+	ids := make([]int64, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return tc.AddAdminIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -153,6 +207,10 @@ func (tc *TeamCreate) defaults() {
 		v := team.DefaultCreatedTime
 		tc.mutation.SetCreatedTime(v)
 	}
+	if _, ok := tc.mutation.Private(); !ok {
+		v := team.DefaultPrivate
+		tc.mutation.SetPrivate(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -160,8 +218,14 @@ func (tc *TeamCreate) check() error {
 	if _, ok := tc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Team.name"`)}
 	}
+	if _, ok := tc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Team.description"`)}
+	}
 	if _, ok := tc.mutation.CreatedTime(); !ok {
 		return &ValidationError{Name: "created_time", err: errors.New(`ent: missing required field "Team.created_time"`)}
+	}
+	if _, ok := tc.mutation.Private(); !ok {
+		return &ValidationError{Name: "private", err: errors.New(`ent: missing required field "Team.private"`)}
 	}
 	return nil
 }
@@ -204,6 +268,14 @@ func (tc *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 		})
 		_node.Name = value
 	}
+	if value, ok := tc.mutation.Description(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: team.FieldDescription,
+		})
+		_node.Description = value
+	}
 	if value, ok := tc.mutation.CreatedTime(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -211,6 +283,14 @@ func (tc *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 			Column: team.FieldCreatedTime,
 		})
 		_node.CreatedTime = value
+	}
+	if value, ok := tc.mutation.Private(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: team.FieldPrivate,
+		})
+		_node.Private = value
 	}
 	if nodes := tc.mutation.MembersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -242,6 +322,45 @@ func (tc *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
 					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := tc.mutation.CreatorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   team.CreatorTable,
+			Columns: []string{team.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.team_creator = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := tc.mutation.AdminsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
 				},
 			},
 		}

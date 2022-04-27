@@ -35,6 +35,26 @@ func (tu *TeamUpdate) SetName(s string) *TeamUpdate {
 	return tu
 }
 
+// SetDescription sets the "description" field.
+func (tu *TeamUpdate) SetDescription(s string) *TeamUpdate {
+	tu.mutation.SetDescription(s)
+	return tu
+}
+
+// SetPrivate sets the "private" field.
+func (tu *TeamUpdate) SetPrivate(b bool) *TeamUpdate {
+	tu.mutation.SetPrivate(b)
+	return tu
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (tu *TeamUpdate) SetNillablePrivate(b *bool) *TeamUpdate {
+	if b != nil {
+		tu.SetPrivate(*b)
+	}
+	return tu
+}
+
 // AddMemberIDs adds the "members" edge to the User entity by IDs.
 func (tu *TeamUpdate) AddMemberIDs(ids ...int64) *TeamUpdate {
 	tu.mutation.AddMemberIDs(ids...)
@@ -63,6 +83,40 @@ func (tu *TeamUpdate) AddAnnouncements(a ...*Announcement) *TeamUpdate {
 		ids[i] = a[i].ID
 	}
 	return tu.AddAnnouncementIDs(ids...)
+}
+
+// SetCreatorID sets the "creator" edge to the User entity by ID.
+func (tu *TeamUpdate) SetCreatorID(id int64) *TeamUpdate {
+	tu.mutation.SetCreatorID(id)
+	return tu
+}
+
+// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
+func (tu *TeamUpdate) SetNillableCreatorID(id *int64) *TeamUpdate {
+	if id != nil {
+		tu = tu.SetCreatorID(*id)
+	}
+	return tu
+}
+
+// SetCreator sets the "creator" edge to the User entity.
+func (tu *TeamUpdate) SetCreator(u *User) *TeamUpdate {
+	return tu.SetCreatorID(u.ID)
+}
+
+// AddAdminIDs adds the "admins" edge to the User entity by IDs.
+func (tu *TeamUpdate) AddAdminIDs(ids ...int64) *TeamUpdate {
+	tu.mutation.AddAdminIDs(ids...)
+	return tu
+}
+
+// AddAdmins adds the "admins" edges to the User entity.
+func (tu *TeamUpdate) AddAdmins(u ...*User) *TeamUpdate {
+	ids := make([]int64, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return tu.AddAdminIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -110,6 +164,33 @@ func (tu *TeamUpdate) RemoveAnnouncements(a ...*Announcement) *TeamUpdate {
 		ids[i] = a[i].ID
 	}
 	return tu.RemoveAnnouncementIDs(ids...)
+}
+
+// ClearCreator clears the "creator" edge to the User entity.
+func (tu *TeamUpdate) ClearCreator() *TeamUpdate {
+	tu.mutation.ClearCreator()
+	return tu
+}
+
+// ClearAdmins clears all "admins" edges to the User entity.
+func (tu *TeamUpdate) ClearAdmins() *TeamUpdate {
+	tu.mutation.ClearAdmins()
+	return tu
+}
+
+// RemoveAdminIDs removes the "admins" edge to User entities by IDs.
+func (tu *TeamUpdate) RemoveAdminIDs(ids ...int64) *TeamUpdate {
+	tu.mutation.RemoveAdminIDs(ids...)
+	return tu
+}
+
+// RemoveAdmins removes "admins" edges to User entities.
+func (tu *TeamUpdate) RemoveAdmins(u ...*User) *TeamUpdate {
+	ids := make([]int64, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return tu.RemoveAdminIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -189,6 +270,20 @@ func (tu *TeamUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: team.FieldName,
+		})
+	}
+	if value, ok := tu.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: team.FieldDescription,
+		})
+	}
+	if value, ok := tu.mutation.Private(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: team.FieldPrivate,
 		})
 	}
 	if tu.mutation.MembersCleared() {
@@ -299,6 +394,95 @@ func (tu *TeamUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if tu.mutation.CreatorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   team.CreatorTable,
+			Columns: []string{team.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.CreatorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   team.CreatorTable,
+			Columns: []string{team.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tu.mutation.AdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.RemovedAdminsIDs(); len(nodes) > 0 && !tu.mutation.AdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.AdminsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{team.Label}
@@ -321,6 +505,26 @@ type TeamUpdateOne struct {
 // SetName sets the "name" field.
 func (tuo *TeamUpdateOne) SetName(s string) *TeamUpdateOne {
 	tuo.mutation.SetName(s)
+	return tuo
+}
+
+// SetDescription sets the "description" field.
+func (tuo *TeamUpdateOne) SetDescription(s string) *TeamUpdateOne {
+	tuo.mutation.SetDescription(s)
+	return tuo
+}
+
+// SetPrivate sets the "private" field.
+func (tuo *TeamUpdateOne) SetPrivate(b bool) *TeamUpdateOne {
+	tuo.mutation.SetPrivate(b)
+	return tuo
+}
+
+// SetNillablePrivate sets the "private" field if the given value is not nil.
+func (tuo *TeamUpdateOne) SetNillablePrivate(b *bool) *TeamUpdateOne {
+	if b != nil {
+		tuo.SetPrivate(*b)
+	}
 	return tuo
 }
 
@@ -352,6 +556,40 @@ func (tuo *TeamUpdateOne) AddAnnouncements(a ...*Announcement) *TeamUpdateOne {
 		ids[i] = a[i].ID
 	}
 	return tuo.AddAnnouncementIDs(ids...)
+}
+
+// SetCreatorID sets the "creator" edge to the User entity by ID.
+func (tuo *TeamUpdateOne) SetCreatorID(id int64) *TeamUpdateOne {
+	tuo.mutation.SetCreatorID(id)
+	return tuo
+}
+
+// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
+func (tuo *TeamUpdateOne) SetNillableCreatorID(id *int64) *TeamUpdateOne {
+	if id != nil {
+		tuo = tuo.SetCreatorID(*id)
+	}
+	return tuo
+}
+
+// SetCreator sets the "creator" edge to the User entity.
+func (tuo *TeamUpdateOne) SetCreator(u *User) *TeamUpdateOne {
+	return tuo.SetCreatorID(u.ID)
+}
+
+// AddAdminIDs adds the "admins" edge to the User entity by IDs.
+func (tuo *TeamUpdateOne) AddAdminIDs(ids ...int64) *TeamUpdateOne {
+	tuo.mutation.AddAdminIDs(ids...)
+	return tuo
+}
+
+// AddAdmins adds the "admins" edges to the User entity.
+func (tuo *TeamUpdateOne) AddAdmins(u ...*User) *TeamUpdateOne {
+	ids := make([]int64, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return tuo.AddAdminIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -399,6 +637,33 @@ func (tuo *TeamUpdateOne) RemoveAnnouncements(a ...*Announcement) *TeamUpdateOne
 		ids[i] = a[i].ID
 	}
 	return tuo.RemoveAnnouncementIDs(ids...)
+}
+
+// ClearCreator clears the "creator" edge to the User entity.
+func (tuo *TeamUpdateOne) ClearCreator() *TeamUpdateOne {
+	tuo.mutation.ClearCreator()
+	return tuo
+}
+
+// ClearAdmins clears all "admins" edges to the User entity.
+func (tuo *TeamUpdateOne) ClearAdmins() *TeamUpdateOne {
+	tuo.mutation.ClearAdmins()
+	return tuo
+}
+
+// RemoveAdminIDs removes the "admins" edge to User entities by IDs.
+func (tuo *TeamUpdateOne) RemoveAdminIDs(ids ...int64) *TeamUpdateOne {
+	tuo.mutation.RemoveAdminIDs(ids...)
+	return tuo
+}
+
+// RemoveAdmins removes "admins" edges to User entities.
+func (tuo *TeamUpdateOne) RemoveAdmins(u ...*User) *TeamUpdateOne {
+	ids := make([]int64, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return tuo.RemoveAdminIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -504,6 +769,20 @@ func (tuo *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) 
 			Column: team.FieldName,
 		})
 	}
+	if value, ok := tuo.mutation.Description(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: team.FieldDescription,
+		})
+	}
+	if value, ok := tuo.mutation.Private(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeBool,
+			Value:  value,
+			Column: team.FieldPrivate,
+		})
+	}
 	if tuo.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -604,6 +883,95 @@ func (tuo *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
 					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tuo.mutation.CreatorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   team.CreatorTable,
+			Columns: []string{team.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.CreatorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   team.CreatorTable,
+			Columns: []string{team.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tuo.mutation.AdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.RemovedAdminsIDs(); len(nodes) > 0 && !tuo.mutation.AdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.AdminsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   team.AdminsTable,
+			Columns: team.AdminsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: user.FieldID,
 				},
 			},
 		}

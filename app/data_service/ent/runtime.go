@@ -62,9 +62,13 @@ func init() {
 	teamFields := schema.Team{}.Fields()
 	_ = teamFields
 	// teamDescCreatedTime is the schema descriptor for created_time field.
-	teamDescCreatedTime := teamFields[2].Descriptor()
+	teamDescCreatedTime := teamFields[3].Descriptor()
 	// team.DefaultCreatedTime holds the default value on creation for the created_time field.
 	team.DefaultCreatedTime = teamDescCreatedTime.Default.(time.Time)
+	// teamDescPrivate is the schema descriptor for private field.
+	teamDescPrivate := teamFields[4].Descriptor()
+	// team.DefaultPrivate holds the default value on creation for the private field.
+	team.DefaultPrivate = teamDescPrivate.Default.(bool)
 	todoFields := schema.Todo{}.Fields()
 	_ = todoFields
 	// todoDescText is the schema descriptor for text field.

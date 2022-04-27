@@ -31,6 +31,10 @@ const (
 	EdgeCreatedProblems = "created_problems"
 	// EdgeSolvedProblems holds the string denoting the solved_problems edge name in mutations.
 	EdgeSolvedProblems = "solved_problems"
+	// EdgeManaged holds the string denoting the managed edge name in mutations.
+	EdgeManaged = "managed"
+	// EdgeOwned holds the string denoting the owned edge name in mutations.
+	EdgeOwned = "owned"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// TeamsTable is the table that holds the teams relation/edge. The primary key declared below.
@@ -64,6 +68,18 @@ const (
 	// SolvedProblemsInverseTable is the table name for the Problem entity.
 	// It exists in this package in order to avoid circular dependency with the "problem" package.
 	SolvedProblemsInverseTable = "problems"
+	// ManagedTable is the table that holds the managed relation/edge. The primary key declared below.
+	ManagedTable = "team_admins"
+	// ManagedInverseTable is the table name for the Team entity.
+	// It exists in this package in order to avoid circular dependency with the "team" package.
+	ManagedInverseTable = "teams"
+	// OwnedTable is the table that holds the owned relation/edge.
+	OwnedTable = "teams"
+	// OwnedInverseTable is the table name for the Team entity.
+	// It exists in this package in order to avoid circular dependency with the "team" package.
+	OwnedInverseTable = "teams"
+	// OwnedColumn is the table column denoting the owned relation/edge.
+	OwnedColumn = "team_creator"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -90,6 +106,9 @@ var (
 	// SolvedProblemsPrimaryKey and SolvedProblemsColumn2 are the table columns denoting the
 	// primary key for the solved_problems relation (M2M).
 	SolvedProblemsPrimaryKey = []string{"user_id", "problem_id"}
+	// ManagedPrimaryKey and ManagedColumn2 are the table columns denoting the
+	// primary key for the managed relation (M2M).
+	ManagedPrimaryKey = []string{"team_id", "user_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

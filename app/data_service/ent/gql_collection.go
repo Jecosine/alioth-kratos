@@ -111,8 +111,16 @@ func (t *TeamQuery) CollectFields(ctx context.Context, satisfies ...string) *Tea
 func (t *TeamQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *TeamQuery {
 	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
 		switch field.Name {
+		case "admins":
+			t = t.WithAdmins(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
 		case "announcements":
 			t = t.WithAnnouncements(func(query *AnnouncementQuery) {
+				query.collectField(ctx, field)
+			})
+		case "creator":
+			t = t.WithCreator(func(query *UserQuery) {
 				query.collectField(ctx, field)
 			})
 		case "members":
@@ -153,6 +161,14 @@ func (u *UserQuery) collectField(ctx *graphql.OperationContext, field graphql.Co
 			})
 		case "created_problems":
 			u = u.WithCreatedProblems(func(query *ProblemQuery) {
+				query.collectField(ctx, field)
+			})
+		case "managed":
+			u = u.WithManaged(func(query *TeamQuery) {
+				query.collectField(ctx, field)
+			})
+		case "owned":
+			u = u.WithOwned(func(query *TeamQuery) {
 				query.collectField(ctx, field)
 			})
 		case "records":

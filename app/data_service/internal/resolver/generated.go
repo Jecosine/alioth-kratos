@@ -99,6 +99,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AcceptInvitation   func(childComplexity int, userID int64, teamID int64) int
+		AddMembers         func(childComplexity int, teamID int64, members []int64) int
 		AddProblem         func(childComplexity int, problem model.ProblemInput) int
 		AddTeam            func(childComplexity int, team model.TeamInput) int
 		BatchCreateUser    func(childComplexity int, users []*model.UserInput) int
@@ -109,20 +110,23 @@ type ComplexityRoot struct {
 		DeleteProblem      func(childComplexity int, problemID int64) int
 		DeleteUser         func(childComplexity int, userID int64) int
 		InviteUser         func(childComplexity int, userID int64, teamID int64) int
+		KickMembers        func(childComplexity int, teamID int64, members []int64) int
 		ModifyProblem      func(childComplexity int, problem model.ProblemInputWithID) int
 		PermitJoinTeam     func(childComplexity int, userID int64, teamID int64) int
 		Ping               func(childComplexity int, payload model.PingInput) int
 		PingAuth           func(childComplexity int, payload model.PingInput) int
 		QuitTeam           func(childComplexity int, userID int64, teamID int64) int
+		RemoveAdmins       func(childComplexity int, teamID int64, admins []int64) int
 		RequestJoinTeam    func(childComplexity int, userID int64, teamID int64) int
-		SetPrivate         func(childComplexity int, private bool) int
+		SetAdmins          func(childComplexity int, teamID int64, admins []int64) int
+		SetPrivate         func(childComplexity int, private bool, teamID int64) int
 		SetTeamAdmin       func(childComplexity int, userID int64, teamID int64) int
 		StarProblem        func(childComplexity int, problemID int64) int
 		SubmitProblem      func(childComplexity int, judgeRequest model.JudgeRequestInput) int
 		UnstarProblem      func(childComplexity int, problemID int64) int
 		UpdateAnnouncement func(childComplexity int, announcementInput model.AnnouncementInputWithID) int
 		UpdateJudgeRecord  func(childComplexity int, recordID int64) int
-		UpdateTeam         func(childComplexity int, team *model.TeamInput) int
+		UpdateTeam         func(childComplexity int, team model.TeamInputWithID) int
 		UpdateUser         func(childComplexity int, user model.UserInput) int
 	}
 
@@ -197,8 +201,11 @@ type ComplexityRoot struct {
 	}
 
 	Team struct {
+		Admins        func(childComplexity int) int
 		Announcements func(childComplexity int) int
 		CreatedTime   func(childComplexity int) int
+		Creator       func(childComplexity int) int
+		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Members       func(childComplexity int) int
 		Name          func(childComplexity int) int
@@ -221,6 +228,7 @@ type ComplexityRoot struct {
 		ID              func(childComplexity int) int
 		Managed         func(childComplexity int) int
 		Nickname        func(childComplexity int) int
+		Owned           func(childComplexity int) int
 		Password        func(childComplexity int) int
 		Records         func(childComplexity int) int
 		SolvedProblems  func(childComplexity int) int
@@ -241,8 +249,12 @@ type MutationResolver interface {
 	ModifyProblem(ctx context.Context, problem model.ProblemInputWithID) (*ent.Problem, error)
 	DeleteProblem(ctx context.Context, problemID int64) (*model.Reply, error)
 	AddTeam(ctx context.Context, team model.TeamInput) (*ent.Team, error)
-	UpdateTeam(ctx context.Context, team *model.TeamInput) (*ent.Team, error)
-	SetPrivate(ctx context.Context, private bool) (*ent.Team, error)
+	UpdateTeam(ctx context.Context, team model.TeamInputWithID) (*ent.Team, error)
+	SetPrivate(ctx context.Context, private bool, teamID int64) (*ent.Team, error)
+	SetAdmins(ctx context.Context, teamID int64, admins []int64) (*model.Reply, error)
+	RemoveAdmins(ctx context.Context, teamID int64, admins []int64) (*model.Reply, error)
+	AddMembers(ctx context.Context, teamID int64, members []int64) (*model.Reply, error)
+	KickMembers(ctx context.Context, teamID int64, members []int64) (*model.Reply, error)
 	CreateUser(ctx context.Context, user model.UserInput) (*ent.User, error)
 	BatchCreateUser(ctx context.Context, users []*model.UserInput) (*model.Reply, error)
 	UpdateUser(ctx context.Context, user model.UserInput) (*ent.User, error)
@@ -275,13 +287,12 @@ type QueryResolver interface {
 	Users(ctx context.Context) ([]*ent.User, error)
 }
 type TeamResolver interface {
-	Private(ctx context.Context, obj *ent.Team) (bool, error)
+	Description(ctx context.Context, obj *ent.Team) (string, error)
 }
 type TodoResolver interface {
 	User(ctx context.Context, obj *ent.Todo) (*ent.User, error)
 }
 type UserResolver interface {
-	Managed(ctx context.Context, obj *ent.User) ([]*ent.Team, error)
 	Announcements(ctx context.Context, obj *ent.User) ([]*ent.Announcement, error)
 	Records(ctx context.Context, obj *ent.User) ([]*ent.JudgeRecord, error)
 }
@@ -523,6 +534,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AcceptInvitation(childComplexity, args["userId"].(int64), args["teamId"].(int64)), true
 
+	case "Mutation.addMembers":
+		if e.complexity.Mutation.AddMembers == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addMembers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddMembers(childComplexity, args["teamId"].(int64), args["members"].([]int64)), true
+
 	case "Mutation.addProblem":
 		if e.complexity.Mutation.AddProblem == nil {
 			break
@@ -643,6 +666,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.InviteUser(childComplexity, args["userId"].(int64), args["teamId"].(int64)), true
 
+	case "Mutation.kickMembers":
+		if e.complexity.Mutation.KickMembers == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_kickMembers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.KickMembers(childComplexity, args["teamId"].(int64), args["members"].([]int64)), true
+
 	case "Mutation.modifyProblem":
 		if e.complexity.Mutation.ModifyProblem == nil {
 			break
@@ -703,6 +738,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.QuitTeam(childComplexity, args["userId"].(int64), args["teamId"].(int64)), true
 
+	case "Mutation.removeAdmins":
+		if e.complexity.Mutation.RemoveAdmins == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeAdmins_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveAdmins(childComplexity, args["teamId"].(int64), args["admins"].([]int64)), true
+
 	case "Mutation.requestJoinTeam":
 		if e.complexity.Mutation.RequestJoinTeam == nil {
 			break
@@ -715,6 +762,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.RequestJoinTeam(childComplexity, args["userId"].(int64), args["teamId"].(int64)), true
 
+	case "Mutation.setAdmins":
+		if e.complexity.Mutation.SetAdmins == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setAdmins_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetAdmins(childComplexity, args["teamId"].(int64), args["admins"].([]int64)), true
+
 	case "Mutation.setPrivate":
 		if e.complexity.Mutation.SetPrivate == nil {
 			break
@@ -725,7 +784,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SetPrivate(childComplexity, args["private"].(bool)), true
+		return e.complexity.Mutation.SetPrivate(childComplexity, args["private"].(bool), args["teamId"].(int64)), true
 
 	case "Mutation.setTeamAdmin":
 		if e.complexity.Mutation.SetTeamAdmin == nil {
@@ -809,7 +868,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateTeam(childComplexity, args["team"].(*model.TeamInput)), true
+		return e.complexity.Mutation.UpdateTeam(childComplexity, args["team"].(model.TeamInputWithID)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -1190,6 +1249,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TaskList.Tasks(childComplexity), true
 
+	case "Team.admins":
+		if e.complexity.Team.Admins == nil {
+			break
+		}
+
+		return e.complexity.Team.Admins(childComplexity), true
+
 	case "Team.announcements":
 		if e.complexity.Team.Announcements == nil {
 			break
@@ -1203,6 +1269,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Team.CreatedTime(childComplexity), true
+
+	case "Team.creator":
+		if e.complexity.Team.Creator == nil {
+			break
+		}
+
+		return e.complexity.Team.Creator(childComplexity), true
+
+	case "Team.description":
+		if e.complexity.Team.Description == nil {
+			break
+		}
+
+		return e.complexity.Team.Description(childComplexity), true
 
 	case "Team.id":
 		if e.complexity.Team.ID == nil {
@@ -1316,6 +1396,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Nickname(childComplexity), true
 
+	case "User.owned":
+		if e.complexity.User.Owned == nil {
+			break
+		}
+
+		return e.complexity.User.Owned(childComplexity), true
+
 	case "User.password":
 		if e.complexity.User.Password == nil {
 			break
@@ -1414,6 +1501,7 @@ directive @taskListFinished on FIELD_DEFINITION
 
 enum RoleType {
     ADMIN
+    TEAM_OWNER
     TEAM_ADMIN
     TEAM_MEMBER
     USER
@@ -1564,7 +1652,10 @@ extend type Query {
 	{Name: "graph/schema/types/team.graphql", Input: `type Team {
     id: ID!
     name: String!
+    description: String!
+    creator: User!
     members: [User!]!
+    admins: [User!]!
     createdTime: Time!
     announcements: [Announcement]
     private: Boolean!
@@ -1605,13 +1696,28 @@ type TaskList {
 
 input TeamInput {
     name: String!
-    members: [ID!]!
-    authorId: ID!
+    description: String!
+    operatorId: ID!
+    members: [ID]
+    admins: [ID]
 }
+input TeamInputWithId {
+    teamId: ID!
+    name: String!
+    description: String!
+    operatorId: ID!
+#    members: [ID]
+#    admins: [ID]
+}
+
 extend type Mutation {
     addTeam(team: TeamInput!): Team
-    updateTeam(team: TeamInput): Team
-    setPrivate(private: Boolean!): Team
+    updateTeam(team: TeamInputWithId!): Team
+    setPrivate(private: Boolean!, teamId: ID!): Team @hasRole(role: TEAM_ADMIN)
+    setAdmins(teamId: ID!, admins: [ID!]!): Reply @hasRole(role: TEAM_ADMIN)
+    removeAdmins(teamId: ID!, admins: [ID!]!): Reply @hasRole(role: TEAM_OWNER)
+    addMembers(teamId: ID!, members: [ID!]!): Reply @hasRole(role: TEAM_ADMIN)
+    kickMembers(teamId: ID!, members: [ID!]!): Reply @hasRole(role: TEAM_ADMIN)
 }
 
 extend type Query {
@@ -1639,6 +1745,7 @@ input NewTodo {
     createdTime: Time!
     teams: [Team]!
     managed: [Team]!
+    owned: [Team]!
     announcements: [Announcement]!
     records: [JudgeRecord]!
     createdProblems: [Problem]!
@@ -1758,6 +1865,30 @@ func (ec *executionContext) field_Mutation_acceptInvitation_args(ctx context.Con
 		}
 	}
 	args["teamId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addMembers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["teamId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["teamId"] = arg0
+	var arg1 []int64
+	if tmp, ok := rawArgs["members"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("members"))
+		arg1, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["members"] = arg1
 	return args, nil
 }
 
@@ -1920,6 +2051,30 @@ func (ec *executionContext) field_Mutation_inviteUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_kickMembers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["teamId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["teamId"] = arg0
+	var arg1 []int64
+	if tmp, ok := rawArgs["members"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("members"))
+		arg1, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["members"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_modifyProblem_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2013,6 +2168,30 @@ func (ec *executionContext) field_Mutation_quitTeam_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_removeAdmins_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["teamId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["teamId"] = arg0
+	var arg1 []int64
+	if tmp, ok := rawArgs["admins"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("admins"))
+		arg1, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["admins"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_requestJoinTeam_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2037,6 +2216,30 @@ func (ec *executionContext) field_Mutation_requestJoinTeam_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_setAdmins_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["teamId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["teamId"] = arg0
+	var arg1 []int64
+	if tmp, ok := rawArgs["admins"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("admins"))
+		arg1, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["admins"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_setPrivate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2049,6 +2252,15 @@ func (ec *executionContext) field_Mutation_setPrivate_args(ctx context.Context, 
 		}
 	}
 	args["private"] = arg0
+	var arg1 int64
+	if tmp, ok := rawArgs["teamId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+		arg1, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["teamId"] = arg1
 	return args, nil
 }
 
@@ -2154,10 +2366,10 @@ func (ec *executionContext) field_Mutation_updateJudgeRecord_args(ctx context.Co
 func (ec *executionContext) field_Mutation_updateTeam_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.TeamInput
+	var arg0 model.TeamInputWithID
 	if tmp, ok := rawArgs["team"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("team"))
-		arg0, err = ec.unmarshalOTeamInput2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐTeamInput(ctx, tmp)
+		arg0, err = ec.unmarshalNTeamInputWithId2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐTeamInputWithID(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3801,7 +4013,7 @@ func (ec *executionContext) _Mutation_updateTeam(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateTeam(rctx, args["team"].(*model.TeamInput))
+		return ec.resolvers.Mutation().UpdateTeam(rctx, args["team"].(model.TeamInputWithID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3839,8 +4051,32 @@ func (ec *executionContext) _Mutation_setPrivate(ctx context.Context, field grap
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SetPrivate(rctx, args["private"].(bool))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().SetPrivate(rctx, args["private"].(bool), args["teamId"].(int64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐRoleType(ctx, "TEAM_ADMIN")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role, nil)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.Team); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/Jecosine/alioth-kratos/app/data_service/ent.Team`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3852,6 +4088,258 @@ func (ec *executionContext) _Mutation_setPrivate(ctx context.Context, field grap
 	res := resTmp.(*ent.Team)
 	fc.Result = res
 	return ec.marshalOTeam2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋentᚐTeam(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_setAdmins(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_setAdmins_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().SetAdmins(rctx, args["teamId"].(int64), args["admins"].([]int64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐRoleType(ctx, "TEAM_ADMIN")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role, nil)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Reply); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/Jecosine/alioth-kratos/app/data_service/internal/model.Reply`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Reply)
+	fc.Result = res
+	return ec.marshalOReply2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐReply(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removeAdmins(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removeAdmins_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RemoveAdmins(rctx, args["teamId"].(int64), args["admins"].([]int64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐRoleType(ctx, "TEAM_OWNER")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role, nil)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Reply); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/Jecosine/alioth-kratos/app/data_service/internal/model.Reply`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Reply)
+	fc.Result = res
+	return ec.marshalOReply2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐReply(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addMembers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addMembers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().AddMembers(rctx, args["teamId"].(int64), args["members"].([]int64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐRoleType(ctx, "TEAM_ADMIN")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role, nil)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Reply); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/Jecosine/alioth-kratos/app/data_service/internal/model.Reply`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Reply)
+	fc.Result = res
+	return ec.marshalOReply2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐReply(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_kickMembers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_kickMembers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().KickMembers(rctx, args["teamId"].(int64), args["members"].([]int64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			role, err := ec.unmarshalNRoleType2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐRoleType(ctx, "TEAM_ADMIN")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.HasRole == nil {
+				return nil, errors.New("directive hasRole is not implemented")
+			}
+			return ec.directives.HasRole(ctx, nil, directive0, role, nil)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.Reply); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/Jecosine/alioth-kratos/app/data_service/internal/model.Reply`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Reply)
+	fc.Result = res
+	return ec.marshalOReply2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐReply(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6313,6 +6801,76 @@ func (ec *executionContext) _Team_name(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Team_description(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Team().Description(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Team_creator(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Creator(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋentᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Team_members(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6332,6 +6890,41 @@ func (ec *executionContext) _Team_members(ctx context.Context, field graphql.Col
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Members(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋentᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Team_admins(ctx context.Context, field graphql.CollectedField, obj *ent.Team) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Team",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Admins(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6426,14 +7019,14 @@ func (ec *executionContext) _Team_private(ctx context.Context, field graphql.Col
 		Object:     "Team",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Team().Private(rctx, obj)
+		return obj.Private, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6847,13 +7440,48 @@ func (ec *executionContext) _User_managed(ctx context.Context, field graphql.Col
 		Field:      field,
 		Args:       nil,
 		IsMethod:   true,
-		IsResolver: true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().Managed(rctx, obj)
+		return obj.Managed(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Team)
+	fc.Result = res
+	return ec.marshalNTeam2ᚕᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋentᚐTeam(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_owned(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owned(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8525,19 +9153,82 @@ func (ec *executionContext) unmarshalInputTeamInput(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "operatorId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorId"))
+			it.OperatorID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "members":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("members"))
-			it.Members, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, v)
+			it.Members, err = ec.unmarshalOID2ᚕᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "authorId":
+		case "admins":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorId"))
-			it.AuthorID, err = ec.unmarshalNID2int64(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("admins"))
+			it.Admins, err = ec.unmarshalOID2ᚕᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTeamInputWithId(ctx context.Context, obj interface{}) (model.TeamInputWithID, error) {
+	var it model.TeamInputWithID
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "teamId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("teamId"))
+			it.TeamID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "operatorId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("operatorId"))
+			it.OperatorID, err = ec.unmarshalNID2int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9110,6 +9801,34 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setPrivate":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setPrivate(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		case "setAdmins":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setAdmins(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		case "removeAdmins":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_removeAdmins(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		case "addMembers":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addMembers(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+		case "kickMembers":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_kickMembers(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -10084,6 +10803,46 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "description":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_description(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "creator":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_creator(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "members":
 			field := field
 
@@ -10094,6 +10853,26 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Team_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "admins":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Team_admins(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -10132,25 +10911,15 @@ func (ec *executionContext) _Team(ctx context.Context, sel ast.SelectionSet, obj
 
 			})
 		case "private":
-			field := field
-
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Team_private(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
+				return ec._Team_private(ctx, field, obj)
 			}
 
-			out.Concurrently(i, func() graphql.Marshaler {
-				return innerFunc(ctx)
+			out.Values[i] = innerFunc(ctx)
 
-			})
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10333,6 +11102,26 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_managed(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "owned":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_owned(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -11258,6 +12047,11 @@ func (ec *executionContext) unmarshalNTeamInput2githubᚗcomᚋJecosineᚋalioth
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNTeamInputWithId2githubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐTeamInputWithID(ctx context.Context, v interface{}) (model.TeamInputWithID, error) {
+	res, err := ec.unmarshalInputTeamInputWithId(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
 	res, err := graphql.UnmarshalTime(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11985,14 +12779,6 @@ func (ec *executionContext) marshalOTeam2ᚖgithubᚗcomᚋJecosineᚋaliothᚑk
 		return graphql.Null
 	}
 	return ec._Team(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOTeamInput2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋinternalᚋmodelᚐTeamInput(ctx context.Context, v interface{}) (*model.TeamInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputTeamInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOTodo2ᚖgithubᚗcomᚋJecosineᚋaliothᚑkratosᚋappᚋdata_serviceᚋentᚐTodo(ctx context.Context, sel ast.SelectionSet, v *ent.Todo) graphql.Marshaler {

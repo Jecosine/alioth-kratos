@@ -47,9 +47,13 @@ type UserEdges struct {
 	CreatedProblems []*Problem `json:"created_problems,omitempty"`
 	// SolvedProblems holds the value of the solved_problems edge.
 	SolvedProblems []*Problem `json:"solved_problems,omitempty"`
+	// Managed holds the value of the managed edge.
+	Managed []*Team `json:"managed,omitempty"`
+	// Owned holds the value of the owned edge.
+	Owned []*Team `json:"owned,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [7]bool
 }
 
 // TeamsOrErr returns the Teams value or an error if the edge
@@ -105,6 +109,24 @@ func (e UserEdges) SolvedProblemsOrErr() ([]*Problem, error) {
 		return e.SolvedProblems, nil
 	}
 	return nil, &NotLoadedError{edge: "solved_problems"}
+}
+
+// ManagedOrErr returns the Managed value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ManagedOrErr() ([]*Team, error) {
+	if e.loadedTypes[5] {
+		return e.Managed, nil
+	}
+	return nil, &NotLoadedError{edge: "managed"}
+}
+
+// OwnedOrErr returns the Owned value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) OwnedOrErr() ([]*Team, error) {
+	if e.loadedTypes[6] {
+		return e.Owned, nil
+	}
+	return nil, &NotLoadedError{edge: "owned"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -215,6 +237,16 @@ func (u *User) QueryCreatedProblems() *ProblemQuery {
 // QuerySolvedProblems queries the "solved_problems" edge of the User entity.
 func (u *User) QuerySolvedProblems() *ProblemQuery {
 	return (&UserClient{config: u.config}).QuerySolvedProblems(u)
+}
+
+// QueryManaged queries the "managed" edge of the User entity.
+func (u *User) QueryManaged() *TeamQuery {
+	return (&UserClient{config: u.config}).QueryManaged(u)
+}
+
+// QueryOwned queries the "owned" edge of the User entity.
+func (u *User) QueryOwned() *TeamQuery {
+	return (&UserClient{config: u.config}).QueryOwned(u)
 }
 
 // Update returns a builder for updating this User.

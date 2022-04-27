@@ -282,8 +282,8 @@ func (t *Team) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     t.ID,
 		Type:   "Team",
-		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 2),
+		Fields: make([]*Field, 4),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(t.Name); err != nil {
@@ -294,12 +294,28 @@ func (t *Team) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(t.CreatedTime); err != nil {
+	if buf, err = json.Marshal(t.Description); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "description",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(t.CreatedTime); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "time.Time",
 		Name:  "created_time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(t.Private); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "bool",
+		Name:  "private",
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
@@ -319,6 +335,26 @@ func (t *Team) Node(ctx context.Context) (node *Node, err error) {
 	err = t.QueryAnnouncements().
 		Select(announcement.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "User",
+		Name: "creator",
+	}
+	err = t.QueryCreator().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "User",
+		Name: "admins",
+	}
+	err = t.QueryAdmins().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +393,7 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 7),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.Nickname); err != nil {
@@ -447,6 +483,26 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	err = u.QuerySolvedProblems().
 		Select(problem.FieldID).
 		Scan(ctx, &node.Edges[4].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[5] = &Edge{
+		Type: "Team",
+		Name: "managed",
+	}
+	err = u.QueryManaged().
+		Select(team.FieldID).
+		Scan(ctx, &node.Edges[5].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[6] = &Edge{
+		Type: "Team",
+		Name: "owned",
+	}
+	err = u.QueryOwned().
+		Select(team.FieldID).
+		Scan(ctx, &node.Edges[6].IDs)
 	if err != nil {
 		return nil, err
 	}
