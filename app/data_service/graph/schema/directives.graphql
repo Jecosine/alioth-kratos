@@ -4,6 +4,7 @@ directive @taskListFinished on FIELD_DEFINITION
 
 enum RoleType {
     ADMIN
+    TEAM_OWNER
     TEAM_ADMIN
     TEAM_MEMBER
     USER
