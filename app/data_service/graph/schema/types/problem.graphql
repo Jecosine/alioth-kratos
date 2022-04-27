@@ -18,11 +18,22 @@ input ProblemInput {
     author: ID!
     tags: [ID]
 }
+input ProblemInputWithId {
+    id: ID!
+    title: String!
+    content: String!
+    author: ID!
+    tags: [ID]
+}
+input ProblemFilter {
+    tags: [ID]
+}
 extend type Mutation {
     addProblem(problem: ProblemInput!): Problem
-    modifyProblem(problem: ProblemInput!): Problem
+    modifyProblem(problem: ProblemInputWithId!): Problem
     deleteProblem(problemId: ID!): Reply
 }
 extend type Query {
     getAllProblems: [Problem]!
+    getProblemsWithFilter(filter: ProblemFilter): [Problem]!
 }
