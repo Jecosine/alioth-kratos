@@ -1,7 +1,10 @@
 type Team {
     id: ID!
     name: String!
+    description: String!
+    creator: User!
     members: [User!]!
+    admins: [User!]!
     createdTime: Time!
     announcements: [Announcement]
     private: Boolean!
@@ -42,13 +45,28 @@ type TaskList {
 
 input TeamInput {
     name: String!
-    members: [ID!]!
-    authorId: ID!
+    description: String!
+    operatorId: ID!
+    members: [ID]
+    admins: [ID]
 }
+input TeamInputWithId {
+    teamId: ID!
+    name: String!
+    description: String!
+    operatorId: ID!
+#    members: [ID]
+#    admins: [ID]
+}
+
 extend type Mutation {
     addTeam(team: TeamInput!): Team
-    updateTeam(team: TeamInput): Team
-    setPrivate(private: Boolean!): Team
+    updateTeam(team: TeamInputWithId!): Team
+    setPrivate(private: Boolean!, teamId: ID!): Team @hasRole(role: TEAM_ADMIN)
+    setAdmins(teamId: ID!, admins: [ID!]!): Reply @hasRole(role: TEAM_ADMIN)
+    removeAdmins(teamId: ID!, admins: [ID!]!): Reply @hasRole(role: TEAM_OWNER)
+    addMembers(teamId: ID!, members: [ID!]!): Reply @hasRole(role: TEAM_ADMIN)
+    kickMembers(teamId: ID!, members: [ID!]!): Reply @hasRole(role: TEAM_ADMIN)
 }
 
 extend type Query {
