@@ -17,8 +17,12 @@ const (
 	FieldContent = "content"
 	// FieldCreatedTime holds the string denoting the createdtime field in the database.
 	FieldCreatedTime = "created_time"
+	// FieldModifiedTime holds the string denoting the modifiedtime field in the database.
+	FieldModifiedTime = "modified_time"
 	// EdgeAuthor holds the string denoting the author edge name in mutations.
 	EdgeAuthor = "author"
+	// EdgeTeam holds the string denoting the team edge name in mutations.
+	EdgeTeam = "team"
 	// Table holds the table name of the announcement in the database.
 	Table = "announcements"
 	// AuthorTable is the table that holds the author relation/edge.
@@ -28,6 +32,13 @@ const (
 	AuthorInverseTable = "users"
 	// AuthorColumn is the table column denoting the author relation/edge.
 	AuthorColumn = "announcement_author"
+	// TeamTable is the table that holds the team relation/edge.
+	TeamTable = "announcements"
+	// TeamInverseTable is the table name for the Team entity.
+	// It exists in this package in order to avoid circular dependency with the "team" package.
+	TeamInverseTable = "teams"
+	// TeamColumn is the table column denoting the team relation/edge.
+	TeamColumn = "announcement_team"
 )
 
 // Columns holds all SQL columns for announcement fields.
@@ -36,12 +47,24 @@ var Columns = []string{
 	FieldTitle,
 	FieldContent,
 	FieldCreatedTime,
+	FieldModifiedTime,
+}
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "announcements"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"announcement_team",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -53,4 +76,6 @@ var (
 	TitleValidator func(string) error
 	// DefaultCreatedTime holds the default value on creation for the "createdTime" field.
 	DefaultCreatedTime time.Time
+	// DefaultModifiedTime holds the default value on creation for the "modifiedTime" field.
+	DefaultModifiedTime time.Time
 )

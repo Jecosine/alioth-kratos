@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/predicate"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
@@ -27,7 +28,8 @@ type TeamQuery struct {
 	fields     []string
 	predicates []predicate.Team
 	// eager-loading edges.
-	withMembers *UserQuery
+	withMembers       *UserQuery
+	withAnnouncements *AnnouncementQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,6 +81,28 @@ func (tq *TeamQuery) QueryMembers() *UserQuery {
 			sqlgraph.From(team.Table, team.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, team.MembersTable, team.MembersPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAnnouncements chains the current query on the "announcements" edge.
+func (tq *TeamQuery) QueryAnnouncements() *AnnouncementQuery {
+	query := &AnnouncementQuery{config: tq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := tq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := tq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, selector),
+			sqlgraph.To(announcement.Table, announcement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, team.AnnouncementsTable, team.AnnouncementsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(tq.driver.Dialect(), step)
 		return fromU, nil
@@ -262,12 +286,13 @@ func (tq *TeamQuery) Clone() *TeamQuery {
 		return nil
 	}
 	return &TeamQuery{
-		config:      tq.config,
-		limit:       tq.limit,
-		offset:      tq.offset,
-		order:       append([]OrderFunc{}, tq.order...),
-		predicates:  append([]predicate.Team{}, tq.predicates...),
-		withMembers: tq.withMembers.Clone(),
+		config:            tq.config,
+		limit:             tq.limit,
+		offset:            tq.offset,
+		order:             append([]OrderFunc{}, tq.order...),
+		predicates:        append([]predicate.Team{}, tq.predicates...),
+		withMembers:       tq.withMembers.Clone(),
+		withAnnouncements: tq.withAnnouncements.Clone(),
 		// clone intermediate query.
 		sql:    tq.sql.Clone(),
 		path:   tq.path,
@@ -283,6 +308,17 @@ func (tq *TeamQuery) WithMembers(opts ...func(*UserQuery)) *TeamQuery {
 		opt(query)
 	}
 	tq.withMembers = query
+	return tq
+}
+
+// WithAnnouncements tells the query-builder to eager-load the nodes that are connected to
+// the "announcements" edge. The optional arguments are used to configure the query builder of the edge.
+func (tq *TeamQuery) WithAnnouncements(opts ...func(*AnnouncementQuery)) *TeamQuery {
+	query := &AnnouncementQuery{config: tq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	tq.withAnnouncements = query
 	return tq
 }
 
@@ -351,8 +387,9 @@ func (tq *TeamQuery) sqlAll(ctx context.Context) ([]*Team, error) {
 	var (
 		nodes       = []*Team{}
 		_spec       = tq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			tq.withMembers != nil,
+			tq.withAnnouncements != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -437,6 +474,35 @@ func (tq *TeamQuery) sqlAll(ctx context.Context) ([]*Team, error) {
 			for i := range nodes {
 				nodes[i].Edges.Members = append(nodes[i].Edges.Members, n)
 			}
+		}
+	}
+
+	if query := tq.withAnnouncements; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int64]*Team)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Announcements = []*Announcement{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Announcement(func(s *sql.Selector) {
+			s.Where(sql.InValues(team.AnnouncementsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.announcement_team
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "announcement_team" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "announcement_team" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Announcements = append(node.Edges.Announcements, n)
 		}
 	}
 

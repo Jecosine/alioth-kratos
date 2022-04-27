@@ -4,12 +4,20 @@ package ent
 
 import "context"
 
-func (a *Announcement) Author(ctx context.Context) ([]*User, error) {
+func (a *Announcement) Author(ctx context.Context) (*User, error) {
 	result, err := a.Edges.AuthorOrErr()
 	if IsNotLoaded(err) {
-		result, err = a.QueryAuthor().All(ctx)
+		result, err = a.QueryAuthor().Only(ctx)
 	}
-	return result, err
+	return result, MaskNotFound(err)
+}
+
+func (a *Announcement) Team(ctx context.Context) (*Team, error) {
+	result, err := a.Edges.TeamOrErr()
+	if IsNotLoaded(err) {
+		result, err = a.QueryTeam().Only(ctx)
+	}
+	return result, MaskNotFound(err)
 }
 
 func (jr *JudgeRecord) User(ctx context.Context) ([]*User, error) {
@@ -56,6 +64,14 @@ func (t *Team) Members(ctx context.Context) ([]*User, error) {
 	result, err := t.Edges.MembersOrErr()
 	if IsNotLoaded(err) {
 		result, err = t.QueryMembers().All(ctx)
+	}
+	return result, err
+}
+
+func (t *Team) Announcements(ctx context.Context) ([]*Announcement, error) {
+	result, err := t.Edges.AnnouncementsOrErr()
+	if IsNotLoaded(err) {
+		result, err = t.QueryAnnouncements().All(ctx)
 	}
 	return result, err
 }

@@ -14,12 +14,22 @@ var (
 		{Name: "title", Type: field.TypeString},
 		{Name: "content", Type: field.TypeString},
 		{Name: "created_time", Type: field.TypeTime},
+		{Name: "modified_time", Type: field.TypeTime},
+		{Name: "announcement_team", Type: field.TypeInt64, Nullable: true},
 	}
 	// AnnouncementsTable holds the schema information for the "announcements" table.
 	AnnouncementsTable = &schema.Table{
 		Name:       "announcements",
 		Columns:    AnnouncementsColumns,
 		PrimaryKey: []*schema.Column{AnnouncementsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "announcements_teams_team",
+				Columns:    []*schema.Column{AnnouncementsColumns[5]},
+				RefColumns: []*schema.Column{TeamsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// JudgeRecordsColumns holds the columns for the "judge_records" table.
 	JudgeRecordsColumns = []*schema.Column{
@@ -102,7 +112,7 @@ var (
 		{Name: "password", Type: field.TypeString},
 		{Name: "avatar", Type: field.TypeString, Default: "test"},
 		{Name: "created_time", Type: field.TypeTime},
-		{Name: "announcement_author", Type: field.TypeInt64, Nullable: true},
+		{Name: "announcement_author", Type: field.TypeInt64, Unique: true, Nullable: true},
 		{Name: "judge_record_user", Type: field.TypeInt64, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
@@ -216,6 +226,7 @@ var (
 )
 
 func init() {
+	AnnouncementsTable.ForeignKeys[0].RefTable = TeamsTable
 	ProblemsTable.ForeignKeys[0].RefTable = UsersTable
 	UsersTable.ForeignKeys[0].RefTable = AnnouncementsTable
 	UsersTable.ForeignKeys[1].RefTable = JudgeRecordsTable

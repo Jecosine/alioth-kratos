@@ -29,6 +29,10 @@ func init() {
 	announcementDescCreatedTime := announcementFields[3].Descriptor()
 	// announcement.DefaultCreatedTime holds the default value on creation for the createdTime field.
 	announcement.DefaultCreatedTime = announcementDescCreatedTime.Default.(time.Time)
+	// announcementDescModifiedTime is the schema descriptor for modifiedTime field.
+	announcementDescModifiedTime := announcementFields[4].Descriptor()
+	// announcement.DefaultModifiedTime holds the default value on creation for the modifiedTime field.
+	announcement.DefaultModifiedTime = announcementDescModifiedTime.Default.(time.Time)
 	judgerecordFields := schema.JudgeRecord{}.Fields()
 	_ = judgerecordFields
 	// judgerecordDescStatus is the schema descriptor for status field.

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
@@ -47,25 +48,62 @@ func (ac *AnnouncementCreate) SetNillableCreatedTime(t *time.Time) *Announcement
 	return ac
 }
 
+// SetModifiedTime sets the "modifiedTime" field.
+func (ac *AnnouncementCreate) SetModifiedTime(t time.Time) *AnnouncementCreate {
+	ac.mutation.SetModifiedTime(t)
+	return ac
+}
+
+// SetNillableModifiedTime sets the "modifiedTime" field if the given value is not nil.
+func (ac *AnnouncementCreate) SetNillableModifiedTime(t *time.Time) *AnnouncementCreate {
+	if t != nil {
+		ac.SetModifiedTime(*t)
+	}
+	return ac
+}
+
 // SetID sets the "id" field.
 func (ac *AnnouncementCreate) SetID(i int64) *AnnouncementCreate {
 	ac.mutation.SetID(i)
 	return ac
 }
 
-// AddAuthorIDs adds the "author" edge to the User entity by IDs.
-func (ac *AnnouncementCreate) AddAuthorIDs(ids ...int64) *AnnouncementCreate {
-	ac.mutation.AddAuthorIDs(ids...)
+// SetAuthorID sets the "author" edge to the User entity by ID.
+func (ac *AnnouncementCreate) SetAuthorID(id int64) *AnnouncementCreate {
+	ac.mutation.SetAuthorID(id)
 	return ac
 }
 
-// AddAuthor adds the "author" edges to the User entity.
-func (ac *AnnouncementCreate) AddAuthor(u ...*User) *AnnouncementCreate {
-	ids := make([]int64, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableAuthorID sets the "author" edge to the User entity by ID if the given value is not nil.
+func (ac *AnnouncementCreate) SetNillableAuthorID(id *int64) *AnnouncementCreate {
+	if id != nil {
+		ac = ac.SetAuthorID(*id)
 	}
-	return ac.AddAuthorIDs(ids...)
+	return ac
+}
+
+// SetAuthor sets the "author" edge to the User entity.
+func (ac *AnnouncementCreate) SetAuthor(u *User) *AnnouncementCreate {
+	return ac.SetAuthorID(u.ID)
+}
+
+// SetTeamID sets the "team" edge to the Team entity by ID.
+func (ac *AnnouncementCreate) SetTeamID(id int64) *AnnouncementCreate {
+	ac.mutation.SetTeamID(id)
+	return ac
+}
+
+// SetNillableTeamID sets the "team" edge to the Team entity by ID if the given value is not nil.
+func (ac *AnnouncementCreate) SetNillableTeamID(id *int64) *AnnouncementCreate {
+	if id != nil {
+		ac = ac.SetTeamID(*id)
+	}
+	return ac
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (ac *AnnouncementCreate) SetTeam(t *Team) *AnnouncementCreate {
+	return ac.SetTeamID(t.ID)
 }
 
 // Mutation returns the AnnouncementMutation object of the builder.
@@ -143,6 +181,10 @@ func (ac *AnnouncementCreate) defaults() {
 		v := announcement.DefaultCreatedTime
 		ac.mutation.SetCreatedTime(v)
 	}
+	if _, ok := ac.mutation.ModifiedTime(); !ok {
+		v := announcement.DefaultModifiedTime
+		ac.mutation.SetModifiedTime(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -160,6 +202,9 @@ func (ac *AnnouncementCreate) check() error {
 	}
 	if _, ok := ac.mutation.CreatedTime(); !ok {
 		return &ValidationError{Name: "createdTime", err: errors.New(`ent: missing required field "Announcement.createdTime"`)}
+	}
+	if _, ok := ac.mutation.ModifiedTime(); !ok {
+		return &ValidationError{Name: "modifiedTime", err: errors.New(`ent: missing required field "Announcement.modifiedTime"`)}
 	}
 	return nil
 }
@@ -218,9 +263,17 @@ func (ac *AnnouncementCreate) createSpec() (*Announcement, *sqlgraph.CreateSpec)
 		})
 		_node.CreatedTime = value
 	}
+	if value, ok := ac.mutation.ModifiedTime(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: announcement.FieldModifiedTime,
+		})
+		_node.ModifiedTime = value
+	}
 	if nodes := ac.mutation.AuthorIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   announcement.AuthorTable,
 			Columns: []string{announcement.AuthorColumn},
@@ -235,6 +288,26 @@ func (ac *AnnouncementCreate) createSpec() (*Announcement, *sqlgraph.CreateSpec)
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ac.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   announcement.TeamTable,
+			Columns: []string{announcement.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.announcement_team = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

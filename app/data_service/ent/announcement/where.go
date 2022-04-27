@@ -114,6 +114,13 @@ func CreatedTime(v time.Time) predicate.Announcement {
 	})
 }
 
+// ModifiedTime applies equality check predicate on the "modifiedTime" field. It's identical to ModifiedTimeEQ.
+func ModifiedTime(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldModifiedTime), v))
+	})
+}
+
 // TitleEQ applies the EQ predicate on the "title" field.
 func TitleEQ(v string) predicate.Announcement {
 	return predicate.Announcement(func(s *sql.Selector) {
@@ -412,13 +419,89 @@ func CreatedTimeLTE(v time.Time) predicate.Announcement {
 	})
 }
 
+// ModifiedTimeEQ applies the EQ predicate on the "modifiedTime" field.
+func ModifiedTimeEQ(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldModifiedTime), v))
+	})
+}
+
+// ModifiedTimeNEQ applies the NEQ predicate on the "modifiedTime" field.
+func ModifiedTimeNEQ(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldModifiedTime), v))
+	})
+}
+
+// ModifiedTimeIn applies the In predicate on the "modifiedTime" field.
+func ModifiedTimeIn(vs ...time.Time) predicate.Announcement {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Announcement(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldModifiedTime), v...))
+	})
+}
+
+// ModifiedTimeNotIn applies the NotIn predicate on the "modifiedTime" field.
+func ModifiedTimeNotIn(vs ...time.Time) predicate.Announcement {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Announcement(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldModifiedTime), v...))
+	})
+}
+
+// ModifiedTimeGT applies the GT predicate on the "modifiedTime" field.
+func ModifiedTimeGT(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldModifiedTime), v))
+	})
+}
+
+// ModifiedTimeGTE applies the GTE predicate on the "modifiedTime" field.
+func ModifiedTimeGTE(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldModifiedTime), v))
+	})
+}
+
+// ModifiedTimeLT applies the LT predicate on the "modifiedTime" field.
+func ModifiedTimeLT(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldModifiedTime), v))
+	})
+}
+
+// ModifiedTimeLTE applies the LTE predicate on the "modifiedTime" field.
+func ModifiedTimeLTE(v time.Time) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldModifiedTime), v))
+	})
+}
+
 // HasAuthor applies the HasEdge predicate on the "author" edge.
 func HasAuthor() predicate.Announcement {
 	return predicate.Announcement(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(AuthorTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, AuthorTable, AuthorColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, AuthorTable, AuthorColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -430,7 +513,35 @@ func HasAuthorWith(preds ...predicate.User) predicate.Announcement {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(AuthorInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, AuthorTable, AuthorColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, AuthorTable, AuthorColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTeam applies the HasEdge predicate on the "team" edge.
+func HasTeam() predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(TeamTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, TeamTable, TeamColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTeamWith applies the HasEdge predicate on the "team" edge with a given conditions (other predicates).
+func HasTeamWith(preds ...predicate.Team) predicate.Announcement {
+	return predicate.Announcement(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(TeamInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, TeamTable, TeamColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

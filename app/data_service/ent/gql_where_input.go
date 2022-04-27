@@ -72,9 +72,23 @@ type AnnouncementWhereInput struct {
 	CreatedTimeLT    *time.Time  `json:"createdtimeLT,omitempty"`
 	CreatedTimeLTE   *time.Time  `json:"createdtimeLTE,omitempty"`
 
+	// "modifiedTime" field predicates.
+	ModifiedTime      *time.Time  `json:"modifiedtime,omitempty"`
+	ModifiedTimeNEQ   *time.Time  `json:"modifiedtimeNEQ,omitempty"`
+	ModifiedTimeIn    []time.Time `json:"modifiedtimeIn,omitempty"`
+	ModifiedTimeNotIn []time.Time `json:"modifiedtimeNotIn,omitempty"`
+	ModifiedTimeGT    *time.Time  `json:"modifiedtimeGT,omitempty"`
+	ModifiedTimeGTE   *time.Time  `json:"modifiedtimeGTE,omitempty"`
+	ModifiedTimeLT    *time.Time  `json:"modifiedtimeLT,omitempty"`
+	ModifiedTimeLTE   *time.Time  `json:"modifiedtimeLTE,omitempty"`
+
 	// "author" edge predicates.
 	HasAuthor     *bool             `json:"hasAuthor,omitempty"`
 	HasAuthorWith []*UserWhereInput `json:"hasAuthorWith,omitempty"`
+
+	// "team" edge predicates.
+	HasTeam     *bool             `json:"hasTeam,omitempty"`
+	HasTeamWith []*TeamWhereInput `json:"hasTeamWith,omitempty"`
 }
 
 // Filter applies the AnnouncementWhereInput filter on the AnnouncementQuery builder.
@@ -262,6 +276,30 @@ func (i *AnnouncementWhereInput) P() (predicate.Announcement, error) {
 	if i.CreatedTimeLTE != nil {
 		predicates = append(predicates, announcement.CreatedTimeLTE(*i.CreatedTimeLTE))
 	}
+	if i.ModifiedTime != nil {
+		predicates = append(predicates, announcement.ModifiedTimeEQ(*i.ModifiedTime))
+	}
+	if i.ModifiedTimeNEQ != nil {
+		predicates = append(predicates, announcement.ModifiedTimeNEQ(*i.ModifiedTimeNEQ))
+	}
+	if len(i.ModifiedTimeIn) > 0 {
+		predicates = append(predicates, announcement.ModifiedTimeIn(i.ModifiedTimeIn...))
+	}
+	if len(i.ModifiedTimeNotIn) > 0 {
+		predicates = append(predicates, announcement.ModifiedTimeNotIn(i.ModifiedTimeNotIn...))
+	}
+	if i.ModifiedTimeGT != nil {
+		predicates = append(predicates, announcement.ModifiedTimeGT(*i.ModifiedTimeGT))
+	}
+	if i.ModifiedTimeGTE != nil {
+		predicates = append(predicates, announcement.ModifiedTimeGTE(*i.ModifiedTimeGTE))
+	}
+	if i.ModifiedTimeLT != nil {
+		predicates = append(predicates, announcement.ModifiedTimeLT(*i.ModifiedTimeLT))
+	}
+	if i.ModifiedTimeLTE != nil {
+		predicates = append(predicates, announcement.ModifiedTimeLTE(*i.ModifiedTimeLTE))
+	}
 
 	if i.HasAuthor != nil {
 		p := announcement.HasAuthor()
@@ -280,6 +318,24 @@ func (i *AnnouncementWhereInput) P() (predicate.Announcement, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, announcement.HasAuthorWith(with...))
+	}
+	if i.HasTeam != nil {
+		p := announcement.HasTeam()
+		if !*i.HasTeam {
+			p = announcement.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasTeamWith) > 0 {
+		with := make([]predicate.Team, 0, len(i.HasTeamWith))
+		for _, w := range i.HasTeamWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, announcement.HasTeamWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -1178,6 +1234,10 @@ type TeamWhereInput struct {
 	// "members" edge predicates.
 	HasMembers     *bool             `json:"hasMembers,omitempty"`
 	HasMembersWith []*UserWhereInput `json:"hasMembersWith,omitempty"`
+
+	// "announcements" edge predicates.
+	HasAnnouncements     *bool                     `json:"hasAnnouncements,omitempty"`
+	HasAnnouncementsWith []*AnnouncementWhereInput `json:"hasAnnouncementsWith,omitempty"`
 }
 
 // Filter applies the TeamWhereInput filter on the TeamQuery builder.
@@ -1344,6 +1404,24 @@ func (i *TeamWhereInput) P() (predicate.Team, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, team.HasMembersWith(with...))
+	}
+	if i.HasAnnouncements != nil {
+		p := team.HasAnnouncements()
+		if !*i.HasAnnouncements {
+			p = team.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasAnnouncementsWith) > 0 {
+		with := make([]predicate.Announcement, 0, len(i.HasAnnouncementsWith))
+		for _, w := range i.HasAnnouncementsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, team.HasAnnouncementsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

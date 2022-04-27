@@ -322,6 +322,34 @@ func HasMembersWith(preds ...predicate.User) predicate.Team {
 	})
 }
 
+// HasAnnouncements applies the HasEdge predicate on the "announcements" edge.
+func HasAnnouncements() predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AnnouncementsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, AnnouncementsTable, AnnouncementsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAnnouncementsWith applies the HasEdge predicate on the "announcements" edge with a given conditions (other predicates).
+func HasAnnouncementsWith(preds ...predicate.Announcement) predicate.Team {
+	return predicate.Team(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AnnouncementsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, AnnouncementsTable, AnnouncementsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Team) predicate.Team {
 	return predicate.Team(func(s *sql.Selector) {

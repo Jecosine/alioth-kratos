@@ -23,6 +23,10 @@ func (a *AnnouncementQuery) collectField(ctx *graphql.OperationContext, field gr
 			a = a.WithAuthor(func(query *UserQuery) {
 				query.collectField(ctx, field)
 			})
+		case "team":
+			a = a.WithTeam(func(query *TeamQuery) {
+				query.collectField(ctx, field)
+			})
 		}
 	}
 	return a
@@ -107,6 +111,10 @@ func (t *TeamQuery) CollectFields(ctx context.Context, satisfies ...string) *Tea
 func (t *TeamQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *TeamQuery {
 	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
 		switch field.Name {
+		case "announcements":
+			t = t.WithAnnouncements(func(query *AnnouncementQuery) {
+				query.collectField(ctx, field)
+			})
 		case "members":
 			t = t.WithMembers(func(query *UserQuery) {
 				query.collectField(ctx, field)

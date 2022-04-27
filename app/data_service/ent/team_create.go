@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
@@ -60,6 +61,21 @@ func (tc *TeamCreate) AddMembers(u ...*User) *TeamCreate {
 		ids[i] = u[i].ID
 	}
 	return tc.AddMemberIDs(ids...)
+}
+
+// AddAnnouncementIDs adds the "announcements" edge to the Announcement entity by IDs.
+func (tc *TeamCreate) AddAnnouncementIDs(ids ...int64) *TeamCreate {
+	tc.mutation.AddAnnouncementIDs(ids...)
+	return tc
+}
+
+// AddAnnouncements adds the "announcements" edges to the Announcement entity.
+func (tc *TeamCreate) AddAnnouncements(a ...*Announcement) *TeamCreate {
+	ids := make([]int64, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return tc.AddAnnouncementIDs(ids...)
 }
 
 // Mutation returns the TeamMutation object of the builder.
@@ -207,6 +223,25 @@ func (tc *TeamCreate) createSpec() (*Team, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := tc.mutation.AnnouncementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
 				},
 			},
 		}

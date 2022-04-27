@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/predicate"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
@@ -28,6 +29,8 @@ type AnnouncementQuery struct {
 	predicates []predicate.Announcement
 	// eager-loading edges.
 	withAuthor *UserQuery
+	withTeam   *TeamQuery
+	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -78,7 +81,29 @@ func (aq *AnnouncementQuery) QueryAuthor() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(announcement.Table, announcement.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, announcement.AuthorTable, announcement.AuthorColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, announcement.AuthorTable, announcement.AuthorColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTeam chains the current query on the "team" edge.
+func (aq *AnnouncementQuery) QueryTeam() *TeamQuery {
+	query := &TeamQuery{config: aq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(announcement.Table, announcement.FieldID, selector),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, announcement.TeamTable, announcement.TeamColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +293,7 @@ func (aq *AnnouncementQuery) Clone() *AnnouncementQuery {
 		order:      append([]OrderFunc{}, aq.order...),
 		predicates: append([]predicate.Announcement{}, aq.predicates...),
 		withAuthor: aq.withAuthor.Clone(),
+		withTeam:   aq.withTeam.Clone(),
 		// clone intermediate query.
 		sql:    aq.sql.Clone(),
 		path:   aq.path,
@@ -283,6 +309,17 @@ func (aq *AnnouncementQuery) WithAuthor(opts ...func(*UserQuery)) *AnnouncementQ
 		opt(query)
 	}
 	aq.withAuthor = query
+	return aq
+}
+
+// WithTeam tells the query-builder to eager-load the nodes that are connected to
+// the "team" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AnnouncementQuery) WithTeam(opts ...func(*TeamQuery)) *AnnouncementQuery {
+	query := &TeamQuery{config: aq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withTeam = query
 	return aq
 }
 
@@ -350,11 +387,19 @@ func (aq *AnnouncementQuery) prepareQuery(ctx context.Context) error {
 func (aq *AnnouncementQuery) sqlAll(ctx context.Context) ([]*Announcement, error) {
 	var (
 		nodes       = []*Announcement{}
+		withFKs     = aq.withFKs
 		_spec       = aq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			aq.withAuthor != nil,
+			aq.withTeam != nil,
 		}
 	)
+	if aq.withTeam != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, announcement.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Announcement{config: aq.config}
 		nodes = append(nodes, node)
@@ -381,7 +426,6 @@ func (aq *AnnouncementQuery) sqlAll(ctx context.Context) ([]*Announcement, error
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Author = []*User{}
 		}
 		query.withFKs = true
 		query.Where(predicate.User(func(s *sql.Selector) {
@@ -400,7 +444,36 @@ func (aq *AnnouncementQuery) sqlAll(ctx context.Context) ([]*Announcement, error
 			if !ok {
 				return nil, fmt.Errorf(`unexpected foreign-key "announcement_author" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Author = append(node.Edges.Author, n)
+			node.Edges.Author = n
+		}
+	}
+
+	if query := aq.withTeam; query != nil {
+		ids := make([]int64, 0, len(nodes))
+		nodeids := make(map[int64][]*Announcement)
+		for i := range nodes {
+			if nodes[i].announcement_team == nil {
+				continue
+			}
+			fk := *nodes[i].announcement_team
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(team.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "announcement_team" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Team = n
+			}
 		}
 	}
 

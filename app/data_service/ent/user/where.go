@@ -682,7 +682,7 @@ func HasAnnouncements() predicate.User {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(AnnouncementsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, AnnouncementsTable, AnnouncementsColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, AnnouncementsTable, AnnouncementsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -694,7 +694,7 @@ func HasAnnouncementsWith(preds ...predicate.Announcement) predicate.User {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(AnnouncementsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, AnnouncementsTable, AnnouncementsColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, AnnouncementsTable, AnnouncementsColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

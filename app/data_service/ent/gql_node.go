@@ -56,8 +56,8 @@ func (a *Announcement) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     a.ID,
 		Type:   "Announcement",
-		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 1),
+		Fields: make([]*Field, 4),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(a.Title); err != nil {
@@ -84,6 +84,14 @@ func (a *Announcement) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "createdTime",
 		Value: string(buf),
 	}
+	if buf, err = json.Marshal(a.ModifiedTime); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "time.Time",
+		Name:  "modifiedTime",
+		Value: string(buf),
+	}
 	node.Edges[0] = &Edge{
 		Type: "User",
 		Name: "author",
@@ -91,6 +99,16 @@ func (a *Announcement) Node(ctx context.Context) (node *Node, err error) {
 	err = a.QueryAuthor().
 		Select(user.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Team",
+		Name: "team",
+	}
+	err = a.QueryTeam().
+		Select(team.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +283,7 @@ func (t *Team) Node(ctx context.Context) (node *Node, err error) {
 		ID:     t.ID,
 		Type:   "Team",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 1),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(t.Name); err != nil {
@@ -291,6 +309,16 @@ func (t *Team) Node(ctx context.Context) (node *Node, err error) {
 	err = t.QueryMembers().
 		Select(user.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Announcement",
+		Name: "announcements",
+	}
+	err = t.QueryAnnouncements().
+		Select(announcement.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}

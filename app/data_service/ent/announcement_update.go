@@ -6,12 +6,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/predicate"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
@@ -40,19 +42,56 @@ func (au *AnnouncementUpdate) SetContent(s string) *AnnouncementUpdate {
 	return au
 }
 
-// AddAuthorIDs adds the "author" edge to the User entity by IDs.
-func (au *AnnouncementUpdate) AddAuthorIDs(ids ...int64) *AnnouncementUpdate {
-	au.mutation.AddAuthorIDs(ids...)
+// SetModifiedTime sets the "modifiedTime" field.
+func (au *AnnouncementUpdate) SetModifiedTime(t time.Time) *AnnouncementUpdate {
+	au.mutation.SetModifiedTime(t)
 	return au
 }
 
-// AddAuthor adds the "author" edges to the User entity.
-func (au *AnnouncementUpdate) AddAuthor(u ...*User) *AnnouncementUpdate {
-	ids := make([]int64, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableModifiedTime sets the "modifiedTime" field if the given value is not nil.
+func (au *AnnouncementUpdate) SetNillableModifiedTime(t *time.Time) *AnnouncementUpdate {
+	if t != nil {
+		au.SetModifiedTime(*t)
 	}
-	return au.AddAuthorIDs(ids...)
+	return au
+}
+
+// SetAuthorID sets the "author" edge to the User entity by ID.
+func (au *AnnouncementUpdate) SetAuthorID(id int64) *AnnouncementUpdate {
+	au.mutation.SetAuthorID(id)
+	return au
+}
+
+// SetNillableAuthorID sets the "author" edge to the User entity by ID if the given value is not nil.
+func (au *AnnouncementUpdate) SetNillableAuthorID(id *int64) *AnnouncementUpdate {
+	if id != nil {
+		au = au.SetAuthorID(*id)
+	}
+	return au
+}
+
+// SetAuthor sets the "author" edge to the User entity.
+func (au *AnnouncementUpdate) SetAuthor(u *User) *AnnouncementUpdate {
+	return au.SetAuthorID(u.ID)
+}
+
+// SetTeamID sets the "team" edge to the Team entity by ID.
+func (au *AnnouncementUpdate) SetTeamID(id int64) *AnnouncementUpdate {
+	au.mutation.SetTeamID(id)
+	return au
+}
+
+// SetNillableTeamID sets the "team" edge to the Team entity by ID if the given value is not nil.
+func (au *AnnouncementUpdate) SetNillableTeamID(id *int64) *AnnouncementUpdate {
+	if id != nil {
+		au = au.SetTeamID(*id)
+	}
+	return au
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (au *AnnouncementUpdate) SetTeam(t *Team) *AnnouncementUpdate {
+	return au.SetTeamID(t.ID)
 }
 
 // Mutation returns the AnnouncementMutation object of the builder.
@@ -60,25 +99,16 @@ func (au *AnnouncementUpdate) Mutation() *AnnouncementMutation {
 	return au.mutation
 }
 
-// ClearAuthor clears all "author" edges to the User entity.
+// ClearAuthor clears the "author" edge to the User entity.
 func (au *AnnouncementUpdate) ClearAuthor() *AnnouncementUpdate {
 	au.mutation.ClearAuthor()
 	return au
 }
 
-// RemoveAuthorIDs removes the "author" edge to User entities by IDs.
-func (au *AnnouncementUpdate) RemoveAuthorIDs(ids ...int64) *AnnouncementUpdate {
-	au.mutation.RemoveAuthorIDs(ids...)
+// ClearTeam clears the "team" edge to the Team entity.
+func (au *AnnouncementUpdate) ClearTeam() *AnnouncementUpdate {
+	au.mutation.ClearTeam()
 	return au
-}
-
-// RemoveAuthor removes "author" edges to User entities.
-func (au *AnnouncementUpdate) RemoveAuthor(u ...*User) *AnnouncementUpdate {
-	ids := make([]int64, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return au.RemoveAuthorIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -183,9 +213,16 @@ func (au *AnnouncementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: announcement.FieldContent,
 		})
 	}
+	if value, ok := au.mutation.ModifiedTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: announcement.FieldModifiedTime,
+		})
+	}
 	if au.mutation.AuthorCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   announcement.AuthorTable,
 			Columns: []string{announcement.AuthorColumn},
@@ -199,9 +236,9 @@ func (au *AnnouncementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := au.mutation.RemovedAuthorIDs(); len(nodes) > 0 && !au.mutation.AuthorCleared() {
+	if nodes := au.mutation.AuthorIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   announcement.AuthorTable,
 			Columns: []string{announcement.AuthorColumn},
@@ -216,19 +253,35 @@ func (au *AnnouncementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := au.mutation.AuthorIDs(); len(nodes) > 0 {
+	if au.mutation.TeamCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   announcement.AuthorTable,
-			Columns: []string{announcement.AuthorColumn},
+			Table:   announcement.TeamTable,
+			Columns: []string{announcement.TeamColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
-					Column: user.FieldID,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   announcement.TeamTable,
+			Columns: []string{announcement.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
 				},
 			},
 		}
@@ -268,19 +321,56 @@ func (auo *AnnouncementUpdateOne) SetContent(s string) *AnnouncementUpdateOne {
 	return auo
 }
 
-// AddAuthorIDs adds the "author" edge to the User entity by IDs.
-func (auo *AnnouncementUpdateOne) AddAuthorIDs(ids ...int64) *AnnouncementUpdateOne {
-	auo.mutation.AddAuthorIDs(ids...)
+// SetModifiedTime sets the "modifiedTime" field.
+func (auo *AnnouncementUpdateOne) SetModifiedTime(t time.Time) *AnnouncementUpdateOne {
+	auo.mutation.SetModifiedTime(t)
 	return auo
 }
 
-// AddAuthor adds the "author" edges to the User entity.
-func (auo *AnnouncementUpdateOne) AddAuthor(u ...*User) *AnnouncementUpdateOne {
-	ids := make([]int64, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableModifiedTime sets the "modifiedTime" field if the given value is not nil.
+func (auo *AnnouncementUpdateOne) SetNillableModifiedTime(t *time.Time) *AnnouncementUpdateOne {
+	if t != nil {
+		auo.SetModifiedTime(*t)
 	}
-	return auo.AddAuthorIDs(ids...)
+	return auo
+}
+
+// SetAuthorID sets the "author" edge to the User entity by ID.
+func (auo *AnnouncementUpdateOne) SetAuthorID(id int64) *AnnouncementUpdateOne {
+	auo.mutation.SetAuthorID(id)
+	return auo
+}
+
+// SetNillableAuthorID sets the "author" edge to the User entity by ID if the given value is not nil.
+func (auo *AnnouncementUpdateOne) SetNillableAuthorID(id *int64) *AnnouncementUpdateOne {
+	if id != nil {
+		auo = auo.SetAuthorID(*id)
+	}
+	return auo
+}
+
+// SetAuthor sets the "author" edge to the User entity.
+func (auo *AnnouncementUpdateOne) SetAuthor(u *User) *AnnouncementUpdateOne {
+	return auo.SetAuthorID(u.ID)
+}
+
+// SetTeamID sets the "team" edge to the Team entity by ID.
+func (auo *AnnouncementUpdateOne) SetTeamID(id int64) *AnnouncementUpdateOne {
+	auo.mutation.SetTeamID(id)
+	return auo
+}
+
+// SetNillableTeamID sets the "team" edge to the Team entity by ID if the given value is not nil.
+func (auo *AnnouncementUpdateOne) SetNillableTeamID(id *int64) *AnnouncementUpdateOne {
+	if id != nil {
+		auo = auo.SetTeamID(*id)
+	}
+	return auo
+}
+
+// SetTeam sets the "team" edge to the Team entity.
+func (auo *AnnouncementUpdateOne) SetTeam(t *Team) *AnnouncementUpdateOne {
+	return auo.SetTeamID(t.ID)
 }
 
 // Mutation returns the AnnouncementMutation object of the builder.
@@ -288,25 +378,16 @@ func (auo *AnnouncementUpdateOne) Mutation() *AnnouncementMutation {
 	return auo.mutation
 }
 
-// ClearAuthor clears all "author" edges to the User entity.
+// ClearAuthor clears the "author" edge to the User entity.
 func (auo *AnnouncementUpdateOne) ClearAuthor() *AnnouncementUpdateOne {
 	auo.mutation.ClearAuthor()
 	return auo
 }
 
-// RemoveAuthorIDs removes the "author" edge to User entities by IDs.
-func (auo *AnnouncementUpdateOne) RemoveAuthorIDs(ids ...int64) *AnnouncementUpdateOne {
-	auo.mutation.RemoveAuthorIDs(ids...)
+// ClearTeam clears the "team" edge to the Team entity.
+func (auo *AnnouncementUpdateOne) ClearTeam() *AnnouncementUpdateOne {
+	auo.mutation.ClearTeam()
 	return auo
-}
-
-// RemoveAuthor removes "author" edges to User entities.
-func (auo *AnnouncementUpdateOne) RemoveAuthor(u ...*User) *AnnouncementUpdateOne {
-	ids := make([]int64, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return auo.RemoveAuthorIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -435,9 +516,16 @@ func (auo *AnnouncementUpdateOne) sqlSave(ctx context.Context) (_node *Announcem
 			Column: announcement.FieldContent,
 		})
 	}
+	if value, ok := auo.mutation.ModifiedTime(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: announcement.FieldModifiedTime,
+		})
+	}
 	if auo.mutation.AuthorCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   announcement.AuthorTable,
 			Columns: []string{announcement.AuthorColumn},
@@ -451,9 +539,9 @@ func (auo *AnnouncementUpdateOne) sqlSave(ctx context.Context) (_node *Announcem
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := auo.mutation.RemovedAuthorIDs(); len(nodes) > 0 && !auo.mutation.AuthorCleared() {
+	if nodes := auo.mutation.AuthorIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   announcement.AuthorTable,
 			Columns: []string{announcement.AuthorColumn},
@@ -468,19 +556,35 @@ func (auo *AnnouncementUpdateOne) sqlSave(ctx context.Context) (_node *Announcem
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := auo.mutation.AuthorIDs(); len(nodes) > 0 {
+	if auo.mutation.TeamCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   announcement.AuthorTable,
-			Columns: []string{announcement.AuthorColumn},
+			Table:   announcement.TeamTable,
+			Columns: []string{announcement.TeamColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
-					Column: user.FieldID,
+					Column: team.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.TeamIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   announcement.TeamTable,
+			Columns: []string{announcement.TeamColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: team.FieldID,
 				},
 			},
 		}

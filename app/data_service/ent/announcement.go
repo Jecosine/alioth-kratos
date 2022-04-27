@@ -9,6 +9,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
 )
 
 // Announcement is the model entity for the Announcement schema.
@@ -22,27 +24,51 @@ type Announcement struct {
 	Content string `json:"content,omitempty"`
 	// CreatedTime holds the value of the "createdTime" field.
 	CreatedTime time.Time `json:"createdTime,omitempty"`
+	// ModifiedTime holds the value of the "modifiedTime" field.
+	ModifiedTime time.Time `json:"modifiedTime,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AnnouncementQuery when eager-loading is set.
-	Edges AnnouncementEdges `json:"edges"`
+	Edges             AnnouncementEdges `json:"edges"`
+	announcement_team *int64
 }
 
 // AnnouncementEdges holds the relations/edges for other nodes in the graph.
 type AnnouncementEdges struct {
 	// Author holds the value of the author edge.
-	Author []*User `json:"author,omitempty"`
+	Author *User `json:"author,omitempty"`
+	// Team holds the value of the team edge.
+	Team *Team `json:"team,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // AuthorOrErr returns the Author value or an error if the edge
-// was not loaded in eager-loading.
-func (e AnnouncementEdges) AuthorOrErr() ([]*User, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AnnouncementEdges) AuthorOrErr() (*User, error) {
 	if e.loadedTypes[0] {
+		if e.Author == nil {
+			// The edge author was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: user.Label}
+		}
 		return e.Author, nil
 	}
 	return nil, &NotLoadedError{edge: "author"}
+}
+
+// TeamOrErr returns the Team value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AnnouncementEdges) TeamOrErr() (*Team, error) {
+	if e.loadedTypes[1] {
+		if e.Team == nil {
+			// The edge team was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: team.Label}
+		}
+		return e.Team, nil
+	}
+	return nil, &NotLoadedError{edge: "team"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,8 +80,10 @@ func (*Announcement) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case announcement.FieldTitle, announcement.FieldContent:
 			values[i] = new(sql.NullString)
-		case announcement.FieldCreatedTime:
+		case announcement.FieldCreatedTime, announcement.FieldModifiedTime:
 			values[i] = new(sql.NullTime)
+		case announcement.ForeignKeys[0]: // announcement_team
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Announcement", columns[i])
 		}
@@ -95,6 +123,19 @@ func (a *Announcement) assignValues(columns []string, values []interface{}) erro
 			} else if value.Valid {
 				a.CreatedTime = value.Time
 			}
+		case announcement.FieldModifiedTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field modifiedTime", values[i])
+			} else if value.Valid {
+				a.ModifiedTime = value.Time
+			}
+		case announcement.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field announcement_team", value)
+			} else if value.Valid {
+				a.announcement_team = new(int64)
+				*a.announcement_team = int64(value.Int64)
+			}
 		}
 	}
 	return nil
@@ -103,6 +144,11 @@ func (a *Announcement) assignValues(columns []string, values []interface{}) erro
 // QueryAuthor queries the "author" edge of the Announcement entity.
 func (a *Announcement) QueryAuthor() *UserQuery {
 	return (&AnnouncementClient{config: a.config}).QueryAuthor(a)
+}
+
+// QueryTeam queries the "team" edge of the Announcement entity.
+func (a *Announcement) QueryTeam() *TeamQuery {
+	return (&AnnouncementClient{config: a.config}).QueryTeam(a)
 }
 
 // Update returns a builder for updating this Announcement.
@@ -134,6 +180,8 @@ func (a *Announcement) String() string {
 	builder.WriteString(a.Content)
 	builder.WriteString(", createdTime=")
 	builder.WriteString(a.CreatedTime.Format(time.ANSIC))
+	builder.WriteString(", modifiedTime=")
+	builder.WriteString(a.ModifiedTime.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -14,6 +14,22 @@ func (r *judgeRecordResolver) User(ctx context.Context, obj *ent.JudgeRecord) (*
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) UpdateJudgeRecord(ctx context.Context, recordID int64) (*ent.JudgeRecord, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) GetRecordsByProblem(ctx context.Context, problemID int64) ([]*ent.JudgeRecord, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) GetRecordsByUser(ctx context.Context, userID int64) ([]*ent.JudgeRecord, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) GetLastRecordByUserAndProblem(ctx context.Context, problemID int64, userID int64) (*ent.JudgeRecord, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 // JudgeRecord returns JudgeRecordResolver implementation.
 func (r *Resolver) JudgeRecord() JudgeRecordResolver { return &judgeRecordResolver{r} }
 

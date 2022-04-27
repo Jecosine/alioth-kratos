@@ -4,6 +4,7 @@ type Team {
     members: [User!]!
     createdTime: Time!
     announcements: [Announcement]
+    private: Boolean!
 }
 
 enum TaskStatus {
@@ -44,10 +45,10 @@ input TeamInput {
     members: [ID!]!
     authorId: ID!
 }
-extend type Team {
+extend type Mutation {
     addTeam(team: TeamInput!): Team
     updateTeam(team: TeamInput): Team
-
+    setPrivate(private: Boolean!): Team
 }
 
 extend type Query {

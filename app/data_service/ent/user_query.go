@@ -108,7 +108,7 @@ func (uq *UserQuery) QueryAnnouncements() *AnnouncementQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(announcement.Table, announcement.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, user.AnnouncementsTable, user.AnnouncementsColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, user.AnnouncementsTable, user.AnnouncementsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil

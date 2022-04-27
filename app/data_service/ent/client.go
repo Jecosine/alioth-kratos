@@ -260,7 +260,23 @@ func (c *AnnouncementClient) QueryAuthor(a *Announcement) *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(announcement.Table, announcement.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, announcement.AuthorTable, announcement.AuthorColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, announcement.AuthorTable, announcement.AuthorColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTeam queries the team edge of a Announcement.
+func (c *AnnouncementClient) QueryTeam(a *Announcement) *TeamQuery {
+	query := &TeamQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(announcement.Table, announcement.FieldID, id),
+			sqlgraph.To(team.Table, team.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, announcement.TeamTable, announcement.TeamColumn),
 		)
 		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
 		return fromV, nil
@@ -724,6 +740,22 @@ func (c *TeamClient) QueryMembers(t *Team) *UserQuery {
 	return query
 }
 
+// QueryAnnouncements queries the announcements edge of a Team.
+func (c *TeamClient) QueryAnnouncements(t *Team) *AnnouncementQuery {
+	query := &AnnouncementQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(team.Table, team.FieldID, id),
+			sqlgraph.To(announcement.Table, announcement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, team.AnnouncementsTable, team.AnnouncementsColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TeamClient) Hooks() []Hook {
 	return c.hooks.Team
@@ -928,7 +960,7 @@ func (c *UserClient) QueryAnnouncements(u *User) *AnnouncementQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(announcement.Table, announcement.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, user.AnnouncementsTable, user.AnnouncementsColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, user.AnnouncementsTable, user.AnnouncementsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

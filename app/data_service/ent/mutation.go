@@ -48,10 +48,12 @@ type AnnouncementMutation struct {
 	title         *string
 	content       *string
 	createdTime   *time.Time
+	modifiedTime  *time.Time
 	clearedFields map[string]struct{}
-	author        map[int64]struct{}
-	removedauthor map[int64]struct{}
+	author        *int64
 	clearedauthor bool
+	team          *int64
+	clearedteam   bool
 	done          bool
 	oldValue      func(context.Context) (*Announcement, error)
 	predicates    []predicate.Announcement
@@ -269,14 +271,45 @@ func (m *AnnouncementMutation) ResetCreatedTime() {
 	m.createdTime = nil
 }
 
-// AddAuthorIDs adds the "author" edge to the User entity by ids.
-func (m *AnnouncementMutation) AddAuthorIDs(ids ...int64) {
-	if m.author == nil {
-		m.author = make(map[int64]struct{})
+// SetModifiedTime sets the "modifiedTime" field.
+func (m *AnnouncementMutation) SetModifiedTime(t time.Time) {
+	m.modifiedTime = &t
+}
+
+// ModifiedTime returns the value of the "modifiedTime" field in the mutation.
+func (m *AnnouncementMutation) ModifiedTime() (r time.Time, exists bool) {
+	v := m.modifiedTime
+	if v == nil {
+		return
 	}
-	for i := range ids {
-		m.author[ids[i]] = struct{}{}
+	return *v, true
+}
+
+// OldModifiedTime returns the old "modifiedTime" field's value of the Announcement entity.
+// If the Announcement object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AnnouncementMutation) OldModifiedTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModifiedTime is only allowed on UpdateOne operations")
 	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModifiedTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModifiedTime: %w", err)
+	}
+	return oldValue.ModifiedTime, nil
+}
+
+// ResetModifiedTime resets all changes to the "modifiedTime" field.
+func (m *AnnouncementMutation) ResetModifiedTime() {
+	m.modifiedTime = nil
+}
+
+// SetAuthorID sets the "author" edge to the User entity by id.
+func (m *AnnouncementMutation) SetAuthorID(id int64) {
+	m.author = &id
 }
 
 // ClearAuthor clears the "author" edge to the User entity.
@@ -289,29 +322,20 @@ func (m *AnnouncementMutation) AuthorCleared() bool {
 	return m.clearedauthor
 }
 
-// RemoveAuthorIDs removes the "author" edge to the User entity by IDs.
-func (m *AnnouncementMutation) RemoveAuthorIDs(ids ...int64) {
-	if m.removedauthor == nil {
-		m.removedauthor = make(map[int64]struct{})
-	}
-	for i := range ids {
-		delete(m.author, ids[i])
-		m.removedauthor[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedAuthor returns the removed IDs of the "author" edge to the User entity.
-func (m *AnnouncementMutation) RemovedAuthorIDs() (ids []int64) {
-	for id := range m.removedauthor {
-		ids = append(ids, id)
+// AuthorID returns the "author" edge ID in the mutation.
+func (m *AnnouncementMutation) AuthorID() (id int64, exists bool) {
+	if m.author != nil {
+		return *m.author, true
 	}
 	return
 }
 
 // AuthorIDs returns the "author" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AuthorID instead. It exists only for internal usage by the builders.
 func (m *AnnouncementMutation) AuthorIDs() (ids []int64) {
-	for id := range m.author {
-		ids = append(ids, id)
+	if id := m.author; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -320,7 +344,45 @@ func (m *AnnouncementMutation) AuthorIDs() (ids []int64) {
 func (m *AnnouncementMutation) ResetAuthor() {
 	m.author = nil
 	m.clearedauthor = false
-	m.removedauthor = nil
+}
+
+// SetTeamID sets the "team" edge to the Team entity by id.
+func (m *AnnouncementMutation) SetTeamID(id int64) {
+	m.team = &id
+}
+
+// ClearTeam clears the "team" edge to the Team entity.
+func (m *AnnouncementMutation) ClearTeam() {
+	m.clearedteam = true
+}
+
+// TeamCleared reports if the "team" edge to the Team entity was cleared.
+func (m *AnnouncementMutation) TeamCleared() bool {
+	return m.clearedteam
+}
+
+// TeamID returns the "team" edge ID in the mutation.
+func (m *AnnouncementMutation) TeamID() (id int64, exists bool) {
+	if m.team != nil {
+		return *m.team, true
+	}
+	return
+}
+
+// TeamIDs returns the "team" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TeamID instead. It exists only for internal usage by the builders.
+func (m *AnnouncementMutation) TeamIDs() (ids []int64) {
+	if id := m.team; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTeam resets all changes to the "team" edge.
+func (m *AnnouncementMutation) ResetTeam() {
+	m.team = nil
+	m.clearedteam = false
 }
 
 // Where appends a list predicates to the AnnouncementMutation builder.
@@ -342,7 +404,7 @@ func (m *AnnouncementMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AnnouncementMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.title != nil {
 		fields = append(fields, announcement.FieldTitle)
 	}
@@ -351,6 +413,9 @@ func (m *AnnouncementMutation) Fields() []string {
 	}
 	if m.createdTime != nil {
 		fields = append(fields, announcement.FieldCreatedTime)
+	}
+	if m.modifiedTime != nil {
+		fields = append(fields, announcement.FieldModifiedTime)
 	}
 	return fields
 }
@@ -366,6 +431,8 @@ func (m *AnnouncementMutation) Field(name string) (ent.Value, bool) {
 		return m.Content()
 	case announcement.FieldCreatedTime:
 		return m.CreatedTime()
+	case announcement.FieldModifiedTime:
+		return m.ModifiedTime()
 	}
 	return nil, false
 }
@@ -381,6 +448,8 @@ func (m *AnnouncementMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldContent(ctx)
 	case announcement.FieldCreatedTime:
 		return m.OldCreatedTime(ctx)
+	case announcement.FieldModifiedTime:
+		return m.OldModifiedTime(ctx)
 	}
 	return nil, fmt.Errorf("unknown Announcement field %s", name)
 }
@@ -410,6 +479,13 @@ func (m *AnnouncementMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedTime(v)
+		return nil
+	case announcement.FieldModifiedTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModifiedTime(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Announcement field %s", name)
@@ -469,15 +545,21 @@ func (m *AnnouncementMutation) ResetField(name string) error {
 	case announcement.FieldCreatedTime:
 		m.ResetCreatedTime()
 		return nil
+	case announcement.FieldModifiedTime:
+		m.ResetModifiedTime()
+		return nil
 	}
 	return fmt.Errorf("unknown Announcement field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AnnouncementMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.author != nil {
 		edges = append(edges, announcement.EdgeAuthor)
+	}
+	if m.team != nil {
+		edges = append(edges, announcement.EdgeTeam)
 	}
 	return edges
 }
@@ -487,21 +569,20 @@ func (m *AnnouncementMutation) AddedEdges() []string {
 func (m *AnnouncementMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case announcement.EdgeAuthor:
-		ids := make([]ent.Value, 0, len(m.author))
-		for id := range m.author {
-			ids = append(ids, id)
+		if id := m.author; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
+	case announcement.EdgeTeam:
+		if id := m.team; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AnnouncementMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedauthor != nil {
-		edges = append(edges, announcement.EdgeAuthor)
-	}
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -509,21 +590,18 @@ func (m *AnnouncementMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *AnnouncementMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case announcement.EdgeAuthor:
-		ids := make([]ent.Value, 0, len(m.removedauthor))
-		for id := range m.removedauthor {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AnnouncementMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedauthor {
 		edges = append(edges, announcement.EdgeAuthor)
+	}
+	if m.clearedteam {
+		edges = append(edges, announcement.EdgeTeam)
 	}
 	return edges
 }
@@ -534,6 +612,8 @@ func (m *AnnouncementMutation) EdgeCleared(name string) bool {
 	switch name {
 	case announcement.EdgeAuthor:
 		return m.clearedauthor
+	case announcement.EdgeTeam:
+		return m.clearedteam
 	}
 	return false
 }
@@ -542,6 +622,12 @@ func (m *AnnouncementMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *AnnouncementMutation) ClearEdge(name string) error {
 	switch name {
+	case announcement.EdgeAuthor:
+		m.ClearAuthor()
+		return nil
+	case announcement.EdgeTeam:
+		m.ClearTeam()
+		return nil
 	}
 	return fmt.Errorf("unknown Announcement unique edge %s", name)
 }
@@ -552,6 +638,9 @@ func (m *AnnouncementMutation) ResetEdge(name string) error {
 	switch name {
 	case announcement.EdgeAuthor:
 		m.ResetAuthor()
+		return nil
+	case announcement.EdgeTeam:
+		m.ResetTeam()
 		return nil
 	}
 	return fmt.Errorf("unknown Announcement edge %s", name)
@@ -2412,18 +2501,21 @@ func (m *TagMutation) ResetEdge(name string) error {
 // TeamMutation represents an operation that mutates the Team nodes in the graph.
 type TeamMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int64
-	name           *string
-	created_time   *time.Time
-	clearedFields  map[string]struct{}
-	members        map[int64]struct{}
-	removedmembers map[int64]struct{}
-	clearedmembers bool
-	done           bool
-	oldValue       func(context.Context) (*Team, error)
-	predicates     []predicate.Team
+	op                   Op
+	typ                  string
+	id                   *int64
+	name                 *string
+	created_time         *time.Time
+	clearedFields        map[string]struct{}
+	members              map[int64]struct{}
+	removedmembers       map[int64]struct{}
+	clearedmembers       bool
+	announcements        map[int64]struct{}
+	removedannouncements map[int64]struct{}
+	clearedannouncements bool
+	done                 bool
+	oldValue             func(context.Context) (*Team, error)
+	predicates           []predicate.Team
 }
 
 var _ ent.Mutation = (*TeamMutation)(nil)
@@ -2656,6 +2748,60 @@ func (m *TeamMutation) ResetMembers() {
 	m.removedmembers = nil
 }
 
+// AddAnnouncementIDs adds the "announcements" edge to the Announcement entity by ids.
+func (m *TeamMutation) AddAnnouncementIDs(ids ...int64) {
+	if m.announcements == nil {
+		m.announcements = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.announcements[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAnnouncements clears the "announcements" edge to the Announcement entity.
+func (m *TeamMutation) ClearAnnouncements() {
+	m.clearedannouncements = true
+}
+
+// AnnouncementsCleared reports if the "announcements" edge to the Announcement entity was cleared.
+func (m *TeamMutation) AnnouncementsCleared() bool {
+	return m.clearedannouncements
+}
+
+// RemoveAnnouncementIDs removes the "announcements" edge to the Announcement entity by IDs.
+func (m *TeamMutation) RemoveAnnouncementIDs(ids ...int64) {
+	if m.removedannouncements == nil {
+		m.removedannouncements = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.announcements, ids[i])
+		m.removedannouncements[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAnnouncements returns the removed IDs of the "announcements" edge to the Announcement entity.
+func (m *TeamMutation) RemovedAnnouncementsIDs() (ids []int64) {
+	for id := range m.removedannouncements {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AnnouncementsIDs returns the "announcements" edge IDs in the mutation.
+func (m *TeamMutation) AnnouncementsIDs() (ids []int64) {
+	for id := range m.announcements {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAnnouncements resets all changes to the "announcements" edge.
+func (m *TeamMutation) ResetAnnouncements() {
+	m.announcements = nil
+	m.clearedannouncements = false
+	m.removedannouncements = nil
+}
+
 // Where appends a list predicates to the TeamMutation builder.
 func (m *TeamMutation) Where(ps ...predicate.Team) {
 	m.predicates = append(m.predicates, ps...)
@@ -2791,9 +2937,12 @@ func (m *TeamMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *TeamMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.members != nil {
 		edges = append(edges, team.EdgeMembers)
+	}
+	if m.announcements != nil {
+		edges = append(edges, team.EdgeAnnouncements)
 	}
 	return edges
 }
@@ -2808,15 +2957,24 @@ func (m *TeamMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeAnnouncements:
+		ids := make([]ent.Value, 0, len(m.announcements))
+		for id := range m.announcements {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *TeamMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedmembers != nil {
 		edges = append(edges, team.EdgeMembers)
+	}
+	if m.removedannouncements != nil {
+		edges = append(edges, team.EdgeAnnouncements)
 	}
 	return edges
 }
@@ -2831,15 +2989,24 @@ func (m *TeamMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case team.EdgeAnnouncements:
+		ids := make([]ent.Value, 0, len(m.removedannouncements))
+		for id := range m.removedannouncements {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *TeamMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedmembers {
 		edges = append(edges, team.EdgeMembers)
+	}
+	if m.clearedannouncements {
+		edges = append(edges, team.EdgeAnnouncements)
 	}
 	return edges
 }
@@ -2850,6 +3017,8 @@ func (m *TeamMutation) EdgeCleared(name string) bool {
 	switch name {
 	case team.EdgeMembers:
 		return m.clearedmembers
+	case team.EdgeAnnouncements:
+		return m.clearedannouncements
 	}
 	return false
 }
@@ -2868,6 +3037,9 @@ func (m *TeamMutation) ResetEdge(name string) error {
 	switch name {
 	case team.EdgeMembers:
 		m.ResetMembers()
+		return nil
+	case team.EdgeAnnouncements:
+		m.ResetAnnouncements()
 		return nil
 	}
 	return fmt.Errorf("unknown Team edge %s", name)

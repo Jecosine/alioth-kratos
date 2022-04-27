@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Jecosine/alioth-kratos/app/data_service/ent/announcement"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/predicate"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/team"
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent/user"
@@ -49,6 +50,21 @@ func (tu *TeamUpdate) AddMembers(u ...*User) *TeamUpdate {
 	return tu.AddMemberIDs(ids...)
 }
 
+// AddAnnouncementIDs adds the "announcements" edge to the Announcement entity by IDs.
+func (tu *TeamUpdate) AddAnnouncementIDs(ids ...int64) *TeamUpdate {
+	tu.mutation.AddAnnouncementIDs(ids...)
+	return tu
+}
+
+// AddAnnouncements adds the "announcements" edges to the Announcement entity.
+func (tu *TeamUpdate) AddAnnouncements(a ...*Announcement) *TeamUpdate {
+	ids := make([]int64, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return tu.AddAnnouncementIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (tu *TeamUpdate) Mutation() *TeamMutation {
 	return tu.mutation
@@ -73,6 +89,27 @@ func (tu *TeamUpdate) RemoveMembers(u ...*User) *TeamUpdate {
 		ids[i] = u[i].ID
 	}
 	return tu.RemoveMemberIDs(ids...)
+}
+
+// ClearAnnouncements clears all "announcements" edges to the Announcement entity.
+func (tu *TeamUpdate) ClearAnnouncements() *TeamUpdate {
+	tu.mutation.ClearAnnouncements()
+	return tu
+}
+
+// RemoveAnnouncementIDs removes the "announcements" edge to Announcement entities by IDs.
+func (tu *TeamUpdate) RemoveAnnouncementIDs(ids ...int64) *TeamUpdate {
+	tu.mutation.RemoveAnnouncementIDs(ids...)
+	return tu
+}
+
+// RemoveAnnouncements removes "announcements" edges to Announcement entities.
+func (tu *TeamUpdate) RemoveAnnouncements(a ...*Announcement) *TeamUpdate {
+	ids := make([]int64, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return tu.RemoveAnnouncementIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -208,6 +245,60 @@ func (tu *TeamUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if tu.mutation.AnnouncementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.RemovedAnnouncementsIDs(); len(nodes) > 0 && !tu.mutation.AnnouncementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.AnnouncementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{team.Label}
@@ -248,6 +339,21 @@ func (tuo *TeamUpdateOne) AddMembers(u ...*User) *TeamUpdateOne {
 	return tuo.AddMemberIDs(ids...)
 }
 
+// AddAnnouncementIDs adds the "announcements" edge to the Announcement entity by IDs.
+func (tuo *TeamUpdateOne) AddAnnouncementIDs(ids ...int64) *TeamUpdateOne {
+	tuo.mutation.AddAnnouncementIDs(ids...)
+	return tuo
+}
+
+// AddAnnouncements adds the "announcements" edges to the Announcement entity.
+func (tuo *TeamUpdateOne) AddAnnouncements(a ...*Announcement) *TeamUpdateOne {
+	ids := make([]int64, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return tuo.AddAnnouncementIDs(ids...)
+}
+
 // Mutation returns the TeamMutation object of the builder.
 func (tuo *TeamUpdateOne) Mutation() *TeamMutation {
 	return tuo.mutation
@@ -272,6 +378,27 @@ func (tuo *TeamUpdateOne) RemoveMembers(u ...*User) *TeamUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return tuo.RemoveMemberIDs(ids...)
+}
+
+// ClearAnnouncements clears all "announcements" edges to the Announcement entity.
+func (tuo *TeamUpdateOne) ClearAnnouncements() *TeamUpdateOne {
+	tuo.mutation.ClearAnnouncements()
+	return tuo
+}
+
+// RemoveAnnouncementIDs removes the "announcements" edge to Announcement entities by IDs.
+func (tuo *TeamUpdateOne) RemoveAnnouncementIDs(ids ...int64) *TeamUpdateOne {
+	tuo.mutation.RemoveAnnouncementIDs(ids...)
+	return tuo
+}
+
+// RemoveAnnouncements removes "announcements" edges to Announcement entities.
+func (tuo *TeamUpdateOne) RemoveAnnouncements(a ...*Announcement) *TeamUpdateOne {
+	ids := make([]int64, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return tuo.RemoveAnnouncementIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -423,6 +550,60 @@ func (tuo *TeamUpdateOne) sqlSave(ctx context.Context) (_node *Team, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt64,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if tuo.mutation.AnnouncementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.RemovedAnnouncementsIDs(); len(nodes) > 0 && !tuo.mutation.AnnouncementsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.AnnouncementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   team.AnnouncementsTable,
+			Columns: []string{team.AnnouncementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt64,
+					Column: announcement.FieldID,
 				},
 			},
 		}

@@ -11,22 +11,49 @@ import (
 	"github.com/Jecosine/alioth-kratos/app/data_service/ent"
 )
 
+type AnnouncementInput struct {
+	Title   string `json:"title"`
+	UserID  int64  `json:"userId"`
+	Content string `json:"content"`
+}
+
+type AnnouncementInputWithID struct {
+	AnnouncementID int64  `json:"announcementId"`
+	Title          string `json:"title"`
+	UserID         int64  `json:"userId"`
+	Content        string `json:"content"`
+}
+
+type Invitation struct {
+	ID      int64     `json:"id"`
+	Invitee *ent.User `json:"invitee"`
+	Inviter *ent.User `json:"inviter"`
+	TeamID  int64     `json:"teamId"`
+}
+
 type JudgeReply struct {
-	ID           string    `json:"id"`
+	ID           int64     `json:"id"`
 	User         *ent.User `json:"user"`
 	JudgeTime    time.Time `json:"judgeTime"`
 	FinishedTime time.Time `json:"finishedTime"`
-	TimeCost     int       `json:"timeCost"`
-	MemoryCost   int       `json:"memoryCost"`
-	Status       int       `json:"status"`
+	TimeCost     int64     `json:"timeCost"`
+	MemoryCost   int64     `json:"memoryCost"`
+	Status       int64     `json:"status"`
 }
 
 type JudgeRequest struct {
-	ID          string       `json:"id"`
+	ID          int64        `json:"id"`
 	User        *ent.User    `json:"user"`
 	CreatedTime time.Time    `json:"createdTime"`
 	SourceCode  string       `json:"source_code"`
 	Problem     *ent.Problem `json:"problem"`
+}
+
+type JudgeRequestInput struct {
+	UserID        int64  `json:"userId"`
+	ProblemID     int64  `json:"problemId"`
+	JudgeRecordID int64  `json:"judgeRecordId"`
+	Code          string `json:"code"`
 }
 
 type NewTodo struct {
@@ -39,19 +66,44 @@ type PingInput struct {
 }
 
 type Privilege struct {
-	ID   string `json:"id"`
+	ID   int64  `json:"id"`
 	Name string `json:"name"`
 }
 
+type ProblemFilter struct {
+	Tags []*int64 `json:"tags"`
+}
+
+type ProblemInput struct {
+	Title   string   `json:"title"`
+	Content string   `json:"content"`
+	Author  int64    `json:"author"`
+	Tags    []*int64 `json:"tags"`
+}
+
+type ProblemInputWithID struct {
+	ID      int64    `json:"id"`
+	Title   string   `json:"title"`
+	Content string   `json:"content"`
+	Author  int64    `json:"author"`
+	Tags    []*int64 `json:"tags"`
+}
+
+type Reply struct {
+	Code    int64       `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"Data"`
+}
+
 type Role struct {
-	ID         string       `json:"id"`
+	ID         int64        `json:"id"`
 	Name       string       `json:"name"`
 	Scope      *RoleScope   `json:"scope"`
 	Privileges []*Privilege `json:"privileges"`
 }
 
 type Task struct {
-	ID         string      `json:"id"`
+	ID         int64       `json:"id"`
 	Name       string      `json:"name"`
 	TaskType   *TaskType   `json:"taskType"`
 	Content    *string     `json:"content"`
@@ -61,13 +113,19 @@ type Task struct {
 }
 
 type TaskList struct {
-	ID           string      `json:"id"`
+	ID           int64       `json:"id"`
 	Name         string      `json:"name"`
 	Assignees    []*ent.User `json:"assignees"`
 	Deadline     time.Time   `json:"deadline"`
 	Status       TaskStatus  `json:"status"`
 	RelyTaskList *TaskList   `json:"relyTaskList"`
 	Tasks        []*Task     `json:"tasks"`
+}
+
+type TeamInput struct {
+	Name     string  `json:"name"`
+	Members  []int64 `json:"members"`
+	AuthorID int64   `json:"authorId"`
 }
 
 type UserInput struct {
@@ -119,20 +177,22 @@ func (e RoleScope) MarshalGQL(w io.Writer) {
 type RoleType string
 
 const (
-	RoleTypeAdmin     RoleType = "ADMIN"
-	RoleTypeTeamAdmin RoleType = "TEAM_ADMIN"
-	RoleTypeUser      RoleType = "USER"
+	RoleTypeAdmin      RoleType = "ADMIN"
+	RoleTypeTeamAdmin  RoleType = "TEAM_ADMIN"
+	RoleTypeTeamMember RoleType = "TEAM_MEMBER"
+	RoleTypeUser       RoleType = "USER"
 )
 
 var AllRoleType = []RoleType{
 	RoleTypeAdmin,
 	RoleTypeTeamAdmin,
+	RoleTypeTeamMember,
 	RoleTypeUser,
 }
 
 func (e RoleType) IsValid() bool {
 	switch e {
-	case RoleTypeAdmin, RoleTypeTeamAdmin, RoleTypeUser:
+	case RoleTypeAdmin, RoleTypeTeamAdmin, RoleTypeTeamMember, RoleTypeUser:
 		return true
 	}
 	return false

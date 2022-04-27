@@ -17,6 +17,8 @@ const (
 	FieldCreatedTime = "created_time"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
+	// EdgeAnnouncements holds the string denoting the announcements edge name in mutations.
+	EdgeAnnouncements = "announcements"
 	// Table holds the table name of the team in the database.
 	Table = "teams"
 	// MembersTable is the table that holds the members relation/edge. The primary key declared below.
@@ -24,6 +26,13 @@ const (
 	// MembersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	MembersInverseTable = "users"
+	// AnnouncementsTable is the table that holds the announcements relation/edge.
+	AnnouncementsTable = "announcements"
+	// AnnouncementsInverseTable is the table name for the Announcement entity.
+	// It exists in this package in order to avoid circular dependency with the "announcement" package.
+	AnnouncementsInverseTable = "announcements"
+	// AnnouncementsColumn is the table column denoting the announcements relation/edge.
+	AnnouncementsColumn = "announcement_team"
 )
 
 // Columns holds all SQL columns for team fields.

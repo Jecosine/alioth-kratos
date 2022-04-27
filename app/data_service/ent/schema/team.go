@@ -26,5 +26,6 @@ func (Team) Fields() []ent.Field {
 func (Team) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("members", User.Type).Annotations(entgql.Bind()),
+		edge.From("announcements", Announcement.Type).Annotations(entgql.Bind()).Ref("team").Annotations(entgql.Bind()),
 	}
 }

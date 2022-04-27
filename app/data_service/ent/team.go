@@ -29,9 +29,11 @@ type Team struct {
 type TeamEdges struct {
 	// Members holds the value of the members edge.
 	Members []*User `json:"members,omitempty"`
+	// Announcements holds the value of the announcements edge.
+	Announcements []*Announcement `json:"announcements,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // MembersOrErr returns the Members value or an error if the edge
@@ -41,6 +43,15 @@ func (e TeamEdges) MembersOrErr() ([]*User, error) {
 		return e.Members, nil
 	}
 	return nil, &NotLoadedError{edge: "members"}
+}
+
+// AnnouncementsOrErr returns the Announcements value or an error if the edge
+// was not loaded in eager-loading.
+func (e TeamEdges) AnnouncementsOrErr() ([]*Announcement, error) {
+	if e.loadedTypes[1] {
+		return e.Announcements, nil
+	}
+	return nil, &NotLoadedError{edge: "announcements"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -95,6 +106,11 @@ func (t *Team) assignValues(columns []string, values []interface{}) error {
 // QueryMembers queries the "members" edge of the Team entity.
 func (t *Team) QueryMembers() *UserQuery {
 	return (&TeamClient{config: t.config}).QueryMembers(t)
+}
+
+// QueryAnnouncements queries the "announcements" edge of the Team entity.
+func (t *Team) QueryAnnouncements() *AnnouncementQuery {
+	return (&TeamClient{config: t.config}).QueryAnnouncements(t)
 }
 
 // Update returns a builder for updating this Team.
