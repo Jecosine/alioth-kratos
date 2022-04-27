@@ -42,5 +42,7 @@ func (User) Edges() []ent.Edge {
 			Annotations(entgql.Bind()),
 		edge.To("solved_problems", Problem.Type).
 			Annotations(entgql.Bind()),
+		edge.From("managed", Team.Type).Annotations(entgql.Bind()).Ref("admins"),
+		edge.From("owned", Team.Type).Annotations(entgql.Bind()).Ref("creator"),
 	}
 }
